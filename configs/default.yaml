@@ -1,0 +1,46 @@
+common:
+  fp16: true
+  disable_tqdm: true # set true when using nohup
+  seed: 0
+
+path:
+  checkpoint: "models/byol/checkpoint"
+  quantizer1: "models/byol/quantizer1.joblib"
+  quantizer2: "models/byol/quantizer2.npy"
+  segment_dir: "segments/byol"
+  result: "results/byol.json"
+
+dataset:
+  root: "data" # ${root}/LibriSpeech/train-clean-100, train-clean-360, ...
+  download: false
+  max_sample_size: 80160 # 5.01 [s]
+  train_file: "src/sdhubert/files/librispeech_train_10Ksubset.txt"
+  dev_file: "src/sdhubert/files/librispeech_val.txt"
+  test_file: "src/sdhubert/files/librispeech_test.txt"
+  dev_alignment: "src/sdhubert/files/librispeech_syllable_val.json"
+  test_alignment: "src/sdhubert/files/librispeech_syllable_test.json"
+
+dataloader:
+  batch_size: 72 # work with single 24GB VRAM GPU
+  num_workers: 30
+
+model:
+  model_type: "byol"
+  model_name_or_path: "facebook/hubert-base-ls960"
+  init_last_layer: 3
+  head_out_size: 256
+  head_hidden_size: 2048
+  ema_decay: 0.999
+  segmentation_layer: 8
+
+optim:
+  epoch: 15
+  lr: 0.0001
+  lr_min: 0.00001
+  stage_ratio: [0.03, 0.47, 0.50] # tri-stage lr schedule
+  weight_decay: 0.01
+  max_norm: null
+
+n_clusters:
+  step1: 16384
+  step2: 4096

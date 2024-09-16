@@ -1,0 +1,28 @@
+common:
+  disable_tqdm: true # set true when using nohup
+  seed: 0
+
+path:
+  checkpoint: "models/sdhubert_base/sdhubert_base.pt"
+  quantizer1: "models/sdhubert_base/sdhubert_base_16384.pt"
+  quantizer2: "models/sdhubert_base/sdhubert_base_16384to4096.npy"
+  segment_dir: "segments/sdhubert_base"
+  result: "results/sdhubert_base.json"
+
+dataset:
+  root: "data" # ${root}/LibriSpeech/train-clean-100, train-clean-360, ...
+  download: false
+  max_sample_size: 80160 # 5.01 [s]
+  dev_alignment: "src/sdhubert/files/librispeech_syllable_val.json"
+  test_alignment: "src/sdhubert/files/librispeech_syllable_test.json"
+
+dataloader:
+  batch_size: 72 # work with single 24GB VRAM GPU
+  num_workers: 30
+
+model:
+  model_type: "sdhubert"
+
+n_clusters:
+  step1: 16384
+  step2: 4096

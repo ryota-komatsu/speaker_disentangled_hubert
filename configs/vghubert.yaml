@@ -1,0 +1,32 @@
+common:
+  disable_tqdm: true # set true when using nohup
+  seed: 0
+
+path:
+  checkpoint: "models/vg-hubert_3"
+  quantizer1: "models/vg-hubert_3/quantizer1.joblib"
+  quantizer2: "models/vg-hubert_3/quantizer2.npy"
+  segment_dir: "segments/vg-hubert_3"
+  result: "results/vg-hubert_3.json"
+
+dataset:
+  root: "data" # ${root}/LibriSpeech/train-clean-100, train-clean-360, ...
+  download: false
+  max_sample_size: 80160 # 5.01 [s]
+  train_file: "src/sdhubert/files/librispeech_train_10Ksubset.txt"
+  dev_file: "src/sdhubert/files/librispeech_val.txt"
+  test_file: "src/sdhubert/files/librispeech_test.txt"
+  dev_alignment: "src/sdhubert/files/librispeech_syllable_val.json"
+  test_alignment: "src/sdhubert/files/librispeech_syllable_test.json"
+
+dataloader:
+  batch_size: 72 # work with single 24GB VRAM GPU
+  num_workers: 30
+
+model:
+  model_type: "vghubert"
+  segmentation_layer: 8
+
+n_clusters:
+  step1: 16384
+  step2: 4096

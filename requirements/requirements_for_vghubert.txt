@@ -1,0 +1,13 @@
+--extra-index-url https://download.pytorch.org/whl/cu117
+fairseq==0.12.2
+joblib==1.4.0
+matplotlib==3.8.4
+numpy==1.26.4
+pandas==2.2.2
+praat-parselmouth==0.4.3
+scikit-learn==1.5.0
+scipy==1.13.1
+soundfile==0.12.1
+torch==2.0.1+cu117
+torchaudio==2.0.2+cu117
+transformers==4.34.0

@@ -1,0 +1,4 @@
+21c21
+<     save_dir = args.save_dir if args.save_dir is not None else librispeech_dataroot/'segments'
+---
+>     save_dir = Path(args.save_dir) if args.save_dir is not None else librispeech_dataroot/'segments'

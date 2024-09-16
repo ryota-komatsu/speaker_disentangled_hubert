@@ -1,0 +1,9 @@
+.vscode
+__pycache__
+src/speaker_disentangled_hubert/mincut/build
+src/speaker_disentangled_hubert/mincut/mincut.c*
+src/sdhubert
+src/vghubert
+results
+runs
+segments

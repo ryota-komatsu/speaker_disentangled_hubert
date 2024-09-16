@@ -1,0 +1,29 @@
+common:
+  fp16: true
+  disable_tqdm: true # set true when using nohup
+  seed: 0
+
+path:
+  checkpoint: "models/vg-hubert_3/checkpoint_sid"
+
+dataset:
+  root: "data/VoxCeleb1"
+  download: false
+  max_sample_size: 128000
+
+dataloader:
+  batch_size: 32 # work with single 24GB VRAM GPU
+  num_workers: 30
+
+model:
+  model_type: "vghubert"
+  model_name_or_path: "models/vg-hubert_3"
+  classifier_proj_size: 256
+  num_labels: 1251 # VoxCeleb1
+  segmentation_layer: 8
+
+optim:
+  epoch: 100
+  lr: 0.0001
+  weight_decay: 0.01
+  max_norm: 1.0
