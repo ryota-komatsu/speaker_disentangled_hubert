@@ -12,6 +12,7 @@ def min_cut(
     sec_per_frame: float = 0.02,
     sec_per_syllable: float = 0.2,
     merge_threshold: Optional[float] = 0.3,
+    max_frames: int = 128,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     from https://github.com/jasonppy/syllable-discovery/blob/master/save_seg_feats_mincut.py#L160
@@ -20,7 +21,7 @@ def min_cut(
 
     ssm = hidden_states @ hidden_states.T
     ssm = ssm - np.min(ssm) + 1e-7  # make it non-negative
-    seg_boundary_frame = mincut.min_cut(ssm, num_syllable + 1)  # +1 for the algo
+    seg_boundary_frame = mincut.min_cut(ssm, num_syllable + 1, max_frames)  # +1 for the algo
 
     seg_boundary_frame_pairs_orig = [[l, r] for l, r in zip(seg_boundary_frame[:-1], seg_boundary_frame[1:])]
     seg_boundary_frame_pairs = [item for item in seg_boundary_frame_pairs_orig if item[1] - item[0] > 2]

@@ -3,8 +3,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue.svg)](https://www.python.org)
 [![colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ryota-komatsu/speaker_disentangled_hubert/blob/main/demo.ipynb)
+[![arXiv](https://img.shields.io/badge/arXiv-Paper-<COLOR>.svg)](https://arxiv.org/abs/2409.10103)
+[![model](https://img.shields.io/badge/%F0%9F%A4%97-Models-blue)](https://huggingface.co/ryota-komatsu/speaker_disentangled_hubert)
 
-This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT](https://arxiv.org/abs/2409.10103)
+This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT](https://arxiv.org/abs/2409.10103).
 
 ## Setup
 
@@ -97,11 +99,11 @@ python main.py --config configs/default.yaml
 
 ```bibtex
 @inproceedings{Komatsu_Self-Supervised_Syllable_Discovery_2024,
-  author = {Komatsu, Ryota and Shinozaki, Takahiro},
-  title = {Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT},
-  year = {2024},
-  month = {Dec.},
+  author    = {Komatsu, Ryota and Shinozaki, Takahiro},
+  title     = {Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT},
+  year      = {2024},
+  month     = {Dec.},
   booktitle = {IEEE Spoken Language Technology Workshop},
-  pages = {},
+  pages     = {},
 }
 ```

@@ -12,7 +12,7 @@ cdef extern from "float.h":
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def min_cut(np.ndarray ssm, Py_ssize_t K):
+def min_cut(np.ndarray ssm, Py_ssize_t K, Py_ssize_t max_frames):
     cdef Py_ssize_t N = ssm.shape[0] + 1
 
     cdef double[:,::1] C = np.ones((N, K), dtype=np.float32, order="C") * DBL_MAX
@@ -23,11 +23,12 @@ def min_cut(np.ndarray ssm, Py_ssize_t K):
     cdef list temp, obj
     cdef Py_ssize_t i, j, k, ind
     for i in range(1,N):
-        temp = [(ssm[j:i, j:i].sum() / 2., ssm[j:i, :j].sum() + ssm[j:i, i:].sum()) for j in range(i)]
+        start = max(0, i - max_frames)
+        temp = [(ssm[j:i, j:i].sum() / 2., ssm[j:i, :j].sum() + ssm[j:i, i:].sum()) for j in range(start, i)]
         for k in range(1,min(K,i+1)):
-            obj = [C[j, k-1] + item[1]/(item[0]+item[1]) for j, item in enumerate(temp)]
+            obj = [C[j, k-1] + item[1]/(item[0]+item[1]) for j, item in zip(range(start, i), temp)]
             ind = np.argmin(obj)
-            B[i,k] = ind
+            B[i,k] = ind + start
             C[i,k] = obj[ind]
     
     # backtrack
