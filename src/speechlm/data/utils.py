@@ -1,11 +1,11 @@
 import glob
 import json
-import math
 import os
+import re
+import sqlite3
 from pathlib import Path
 from typing import Any, Dict
 
-import librosa
 import numpy as np
 import pandas as pd
 import torch
@@ -14,17 +14,27 @@ from datasets import Dataset, DatasetDict, load_dataset
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 
-from .utils import normalize_text
+filler_pattern1 = re.compile(r"\buhm?,?\b", re.IGNORECASE)
+filler_pattern2 = re.compile(r"\bum,?\b", re.IGNORECASE)
+repeat_pattern1 = re.compile(r"\b(\w+)\b([,\s]+\1\b)+", re.IGNORECASE)
+repeat_pattern2 = re.compile(r"\b(\w+\s+\w+)\b([,\s]+\1\b)+", re.IGNORECASE)
 
 
-def get_collator(tokenizer):
+def get_collator(tokenizer, max_length: int = 128):
     def collator(batch) -> Dict[str, Any]:
         inputs = []
         for item in batch:
             item = "".join(f"<{unit}>" for unit in item["units"])
             inputs.append(item + tokenizer.eos_token)
 
-        inputs = tokenizer(inputs, padding=True, return_tensors="pt")
+        inputs = tokenizer(inputs, padding=False)
+
+        # random truncation
+        lengths = torch.tensor([len(input_ids) for input_ids in inputs.input_ids])
+        starts = (torch.rand(len(lengths)) * torch.clamp(lengths - max_length, min=0)).int()
+        input_ids = [inputs.input_ids[i][start : start + max_length] for i, start in enumerate(starts)]
+
+        inputs = tokenizer.pad({"input_ids": input_ids}, padding=True, return_tensors="pt")
         inputs["labels"] = inputs.input_ids.masked_fill(inputs.attention_mask.bool().logical_not(), -100)
 
         return inputs
@@ -76,13 +86,58 @@ def get_tokenize_fn(encoder, data_dir, text_column: str):
     return _tokenize
 
 
+def tokenize_storycloze(encoder, SC_dir):
+    SC_test_paths = sorted(glob.glob(os.path.join(SC_dir, "*.wav")), key=lambda x: int(Path(x).stem.split("_")[0]))
+    SC_test = []
+
+    for n in tqdm(range(0, len(SC_test_paths), 2)):
+        pos_path = SC_test_paths[n]
+        neg_path = SC_test_paths[n + 1]
+
+        pos_audio, sr = torchaudio.load(pos_path)
+        neg_audio, sr = torchaudio.load(neg_path)
+
+        input_values = [pos_audio.squeeze(0), neg_audio.squeeze(0)]
+        attention_mask = [torch.ones_like(item, dtype=torch.long) for item in input_values]
+
+        input_values = pad_sequence(input_values, batch_first=True)
+        attention_mask = pad_sequence(attention_mask, batch_first=True)
+
+        outputs = encoder(input_values.to(encoder.device), attention_mask.to(encoder.device))
+
+        with open(Path(pos_path).with_suffix(".txt")) as f:
+            pos_text = f.read().strip()
+
+        with open(Path(neg_path).with_suffix(".txt")) as f:
+            neg_text = f.read().strip()
+
+        example = {
+            "filename": {
+                "pos": pos_path,
+                "neg": neg_path,
+            },
+            "units": {
+                "pos": outputs[0]["units"].tolist(),
+                "neg": outputs[1]["units"].tolist(),
+            },
+            "text": {
+                "pos": pos_text,
+                "neg": neg_text,
+            },
+        }
+        SC_test.append(example)
+
+    return Dataset.from_list(SC_test)
+
+
 def tokenize_eval(config):
-    from ..s5hubert import S5HubertForSyllableDiscovery
+    from ...s5hubert import S5HubertForSyllableDiscovery
 
     tqdm.pandas()
 
     app_dir = Path(config.dataset.APP_DIR).expanduser()
     tSC_dir = Path(config.dataset.tSC_DIR)
+    sSC_dir = Path(config.dataset.sSC_DIR)
 
     swuggy_dev_dir = app_dir / "datasets/sLM21-dataset/lexical/dev"
     sblimp_dev_dir = app_dir / "datasets/sLM21-dataset/syntactic/dev"
@@ -117,124 +172,18 @@ def tokenize_eval(config):
     )
     sblimp_test = Dataset.from_pandas(sblimp_test)
 
-    # tSC
-    tSC_test_paths = sorted(glob.glob(os.path.join(tSC_dir, "*.wav")), key=lambda x: int(Path(x).stem.split("_")[0]))
-    tSC_test = []
-
-    for n in tqdm(range(0, len(tSC_test_paths), 2)):
-        pos_path = tSC_test_paths[n]
-        neg_path = tSC_test_paths[n + 1]
-
-        pos_audio, sr = torchaudio.load(pos_path)
-        neg_audio, sr = torchaudio.load(neg_path)
-
-        input_values = [pos_audio.squeeze(0), neg_audio.squeeze(0)]
-        attention_mask = [torch.ones_like(item, dtype=torch.long) for item in input_values]
-
-        input_values = pad_sequence(input_values, batch_first=True)
-        attention_mask = pad_sequence(attention_mask, batch_first=True)
-
-        outputs = encoder(input_values.to(encoder.device), attention_mask.to(encoder.device))
-
-        example = {
-            "filename": {
-                "pos": pos_path,
-                "neg": neg_path,
-            },
-            "units": {
-                "pos": outputs[0]["units"].tolist(),
-                "neg": outputs[1]["units"].tolist(),
-            },
-        }
-        tSC_test.append(example)
-
-    tSC_test = Dataset.from_list(tSC_test)
+    tSC_test = tokenize_storycloze(encoder, tSC_dir)
+    sSC_test = tokenize_storycloze(encoder, sSC_dir)
 
     swuggy = DatasetDict({"validation": swuggy_dev, "test": swuggy_test})
     sblimp = DatasetDict({"validation": sblimp_dev, "test": sblimp_test})
     tSC = DatasetDict({"test": tSC_test})
+    sSC = DatasetDict({"test": sSC_test})
 
     swuggy.push_to_hub(config.dataset.name, "sWUGGY")
     sblimp.push_to_hub(config.dataset.name, "sBLIMP")
     tSC.push_to_hub(config.dataset.name, "tSC")
-
-
-def tokenize_train(config, num_shards: int = 1, shard_index: int = 0):
-    from ..s5hubert import S5HubertForSyllableDiscovery
-
-    data_files = sorted(
-        glob.glob(os.path.join(config.dataset.ll_dir, "**/*" + config.dataset.ext_audio), recursive=True)
-    )
-    dataset = load_dataset("audiofolder", data_files=data_files, split="train")
-    dataset = dataset.shard(num_shards=num_shards, index=shard_index)
-
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
-
-    with open(f"{config.dataset.manifest_prefix}{shard_index:02}.json", "w") as f:
-        for example in tqdm(dataset):
-            input_values, _ = librosa.effects.trim(example["audio"]["array"], top_db=20)
-            input_values = torch.from_numpy(input_values)
-            outputs = encoder.chunk_forward(input_values.unsqueeze(0).to(encoder.device, torch.float))
-
-            for idx, output in enumerate(outputs):
-                id_ = str(Path(example["audio"]["path"]).relative_to(config.dataset.ll_dir).with_suffix(f".{idx}"))
-
-                manifest = {
-                    "id": id_,
-                    "units": output["units"].tolist(),
-                    "intermediate_units": output["intermediate_units"].tolist(),
-                }
-                f.write(json.dumps(manifest) + "\n")
-
-
-def merge_train(config):
-    data_files = sorted(glob.glob(f"{config.dataset.manifest_prefix}*.json"))
-    dataset = load_dataset("json", data_files=data_files, split="train")
-    dataset = DatasetDict({"train": dataset})
-    dataset.push_to_hub(config.dataset.name, "Libri-Light")
-
-
-def _tokenize_train(config, num_shards: int = 1, shard_index: int = 0):
-    from ..s5hubert import S5HubertForSyllableDiscovery
-
-    data_files = [
-        os.path.join(config.dataset.lh_dir, "libriheavy_cuts_small.jsonl.gz"),
-        os.path.join(config.dataset.lh_dir, "libriheavy_cuts_medium.jsonl.gz"),
-        os.path.join(config.dataset.lh_dir, "libriheavy_cuts_large.jsonl.gz"),
-    ]
-    dataset = load_dataset("json", data_files=data_files, split="train")
-    dataset = dataset.shard(num_shards=num_shards, index=shard_index)
-
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
-
-    with open(f"{config.dataset.manifest_prefix}{shard_index}.json", "w") as f:
-        for example in tqdm(dataset):
-            load_path = os.path.join(config.dataset.ll_dir, example["recording"]["id"] + config.dataset.ext_audio)
-            save_path = os.path.join(config.dataset.lh_dir, example["id"] + config.dataset.ext_audio)
-            Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-
-            input_values, sr = torchaudio.load(
-                load_path,
-                frame_offset=math.floor(16000 * max(example["start"], 0)),
-                num_frames=math.floor(16000 * example["duration"]),
-            )
-            torchaudio.save(save_path, input_values, sr, encoding="PCM_S", bits_per_sample=16)
-
-            outputs = encoder(input_values.to(encoder.device))
-
-            text = example["supervisions"][0]["custom"]["texts"][0]
-            text = normalize_text(text)
-
-            example = {
-                "audio_filepath": save_path,
-                "text": text,
-                "id": example["id"],
-                "units": outputs[0]["units"].tolist(),
-                "durations": outputs[0]["durations"].tolist(),
-                "intermediate_units": outputs[0]["intermediate_units"].tolist(),
-            }
-            json.dump(example, f)
-            f.write("\n")
+    sSC.push_to_hub(config.dataset.name, "sSC")
 
 
 def align_text(config, shard_index: int = 0):

@@ -6,8 +6,8 @@ from deepspeed.utils.tensor_fragment import fragment_address
 from omegaconf import OmegaConf
 from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
 
-from .callbacks import DefrostCallback, EvaluationCallback
-from .data import get_collator
+from .data.utils import get_collator
+from .trainer import SpeechLMTrainer
 
 torch.serialization.add_safe_globals(
     [
@@ -23,6 +23,8 @@ torch.serialization.add_safe_globals(
 
 
 def train(config):
+    deepspeed.init_distributed()
+
     # Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(config.model_args.name)
     if tokenizer.pad_token is None:
@@ -35,19 +37,12 @@ def train(config):
     tokenizer.add_tokens(units)
 
     # Datasets
-    train_dataset = load_dataset(config.dataset.name, "Libri-Light", split="train", keep_in_memory=True)
-    train_dataset = concatenate_datasets([train_dataset, train_dataset.remove_columns("aligned_units")])
-    eval_dataset = {
-        "sWUGGY": load_dataset(config.dataset.name, "sWUGGY"),
-        "sBLIMP": load_dataset(config.dataset.name, "sBLIMP"),
-        "tSC": load_dataset(config.dataset.name, "tSC"),
-    }
+    librilight = load_dataset(config.dataset.name, "Libri-Light", split="train", keep_in_memory=True)
+    train_dataset = concatenate_datasets([librilight, librilight.remove_columns("aligned_units")])
 
     # Model
     model = AutoModelForCausalLM.from_pretrained(config.model_args.name)
     model.resize_token_embeddings(len(tokenizer), mean_resizing=config.model_args.mean_resizing)
-
-    callbacks = [EvaluationCallback(eval_dataset), DefrostCallback(config.model_args.defrost_steps, len(vocab))]
 
     training_args = TrainingArguments(**OmegaConf.to_container(config.training_args))
 
@@ -57,6 +52,5 @@ def train(config):
         train_dataset=train_dataset,
         processing_class=tokenizer,
         data_collator=get_collator(tokenizer),
-        callbacks=callbacks,
     )
     trainer.train(resume_from_checkpoint=config.training_args.resume_from_checkpoint)

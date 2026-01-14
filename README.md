@@ -138,7 +138,7 @@ python main_unit2speech.py train_dit --config=configs/unit2speech/default.yaml
 ```shell
 GROUP_NAME=
 
-qsub -g ${GROUP_NAME} scripts/run_speechlm_deepspeed.bash configs/speechlm/default.yaml configs/speechlm/deepspeed.yaml
+qsub -g ${GROUP_NAME} scripts/run_speechlm_deepspeed.bash configs/speechlm/default.yaml
 ```
 
 ## Citation

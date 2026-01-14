@@ -46,6 +46,8 @@ class MLP(nn.Module):
             nn.Linear(hidden_dim, out_dim, bias=False),
         )
 
+        self.apply(init_module)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.mlp(x)
         if self.norm_outputs:

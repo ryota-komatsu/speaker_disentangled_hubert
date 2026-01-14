@@ -1,14 +1,10 @@
 dataset:
-  ll_dir: "data/librilight"
-  lh_dir: "data/libriheavy"
-  ext_audio: ".flac"
-  manifest_prefix: "data/manifest"
-
   name: "ryota-komatsu/s5-hubert"
 
   HF_HOME: "~/.cache/huggingface"
   APP_DIR: "data/zr-data"
   tSC_DIR: "data/tSC"
+  sSC_DIR: "data/sSC"
 
 model_args:
   name: ""
@@ -18,22 +14,26 @@ model_args:
 training_args:
   output_dir: "models/speechlm"
   per_device_train_batch_size: 32
-  per_device_eval_batch_size: 32
+  per_device_eval_batch_size: 64
   gradient_accumulation_steps: 16
-  learning_rate: 0.0005
+  learning_rate: 0.0003
   weight_decay: 0.01
   adam_beta1: 0.9
-  adam_beta2: 0.98
+  adam_beta2: 0.95
   max_grad_norm: 0.5
-  max_steps: 100000
-  lr_scheduler_type: "cosine_with_min_lr"
-  lr_scheduler_kwargs: {"min_lr": 0.00005}
+  max_steps: 15000
+  lr_scheduler_type: "warmup_stable_decay"
+  lr_scheduler_kwargs: {"num_decay_steps": 5000, "min_lr_ratio": 0.1, "decay_type": "linear"}
   warmup_steps: 100
-  save_steps: 1000
+  logging_steps: 10
+  save_steps: 500
   save_total_limit: null
   bf16: true
   eval_steps: 5000
+  dataloader_num_workers: 16
   remove_unused_columns: false
+  deepspeed: "configs/speechlm/ds_zero2_bf16.json"
+  optim: "adamw_torch_fused"
   ddp_find_unused_parameters: false
   resume_from_checkpoint: null
 

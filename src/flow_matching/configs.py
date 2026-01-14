@@ -11,7 +11,7 @@ class FlowMatchingConfig(PretrainedConfig):
         vocab_size: int = 16384,
         num_mel_bins: int = 80,
         embedding_dim: int = 768,
-        hidden_size: int = 256,
+        hidden_size: int = 512,
         num_hidden_layers: int = 4,
         num_attention_heads: int = 2,
         intermediate_size: int = 768,
@@ -19,7 +19,6 @@ class FlowMatchingConfig(PretrainedConfig):
         cfg_dropout: float = 0.2,
         mean: float = -5.8843,
         std: float = 2.2615,
-        predict_duration: bool = True,
         rope_theta: float = 10000.0,
         max_position_embeddings=None,
         dt: float = 0.1,
@@ -37,7 +36,6 @@ class FlowMatchingConfig(PretrainedConfig):
         self.cfg_dropout = cfg_dropout
         self.mean = mean
         self.std = std
-        self.predict_duration = predict_duration
         self.rope_theta = rope_theta
         self.max_position_embeddings = max_position_embeddings
         self.dt = dt

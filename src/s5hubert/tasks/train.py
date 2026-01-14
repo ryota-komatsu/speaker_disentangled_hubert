@@ -20,12 +20,15 @@ class EMACallback(TrainerCallback):
 
 
 class DefrostCallback(TrainerCallback):
+    def __init__(self, defrost_steps: int = 2000):
+        self.defrost_steps = defrost_steps
+
     def on_train_begin(self, args, state, control, model, **kwargs):
-        if state.global_step < args.warmup_steps:
+        if state.global_step < self.defrost_steps:
             model.freeze_pretrained_modules()
 
     def on_step_end(self, args, state, control, model, **kwargs):
-        if state.global_step == args.warmup_steps:
+        if state.global_step == self.defrost_steps:
             model.defrost_transformer_encoder()
 
 

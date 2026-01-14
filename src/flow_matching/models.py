@@ -136,14 +136,10 @@ class TimestepEmbedding(nn.Module):
 class FlowMatchingModel(PreTrainedModel):
     config_class = FlowMatchingConfig
 
-    def __init__(self, config: FlowMatchingConfig, embedding: Optional[nn.Embedding] = None):
+    def __init__(self, config: FlowMatchingConfig):
         super().__init__(config)
         self.time_cond_mlp = TimestepEmbedding(config.hidden_size)
-        self.embed_tokens = (
-            nn.Embedding(config.vocab_size + 1, config.embedding_dim, padding_idx=config.vocab_size)
-            if embedding is None
-            else embedding
-        )
+        self.embed_tokens = nn.Embedding(config.vocab_size + 1, config.embedding_dim, padding_idx=config.vocab_size)
         self.to_embed = nn.Linear(config.num_mel_bins + config.embedding_dim + config.num_mel_bins, config.hidden_size)
 
         self.layers = nn.ModuleList([DiTLayer(config) for _ in range(config.num_hidden_layers)])
@@ -151,7 +147,7 @@ class FlowMatchingModel(PreTrainedModel):
         self.rotary_emb = Qwen3RotaryEmbedding(config)
 
         self.to_pred = nn.Linear(config.hidden_size, config.num_mel_bins, bias=False)
-        self.duration_predictor = FlowMatchingDurationPredictor(config) if config.predict_duration else None
+        self.duration_predictor = FlowMatchingDurationPredictor(config)
 
     def forward(
         self,
@@ -183,17 +179,15 @@ class FlowMatchingModel(PreTrainedModel):
         inputs_embeds = self.embed_tokens(input_ids)
 
         # forward duration predictor
-        duration_loss = 0
-        if self.config.predict_duration:
-            duration_predictions = self.duration_predictor(inputs_embeds)
-            # use groundtruth in training
-            inputs_embeds = length_regulator(inputs_embeds, duration_labels)
+        duration_predictions = self.duration_predictor(inputs_embeds)
+        # use groundtruth in training
+        inputs_embeds = length_regulator(inputs_embeds, duration_labels)
 
-            attention_mask = input_ids.ne(self.config.vocab_size)
-            duration_predictions = duration_predictions.masked_select(attention_mask)
-            duration_labels_ = duration_labels.masked_select(attention_mask)
-            duration_labels_ = torch.log(duration_labels_.float() + self.duration_predictor.log_domain_offset)
-            duration_loss = F.mse_loss(duration_predictions, duration_labels_)
+        attention_mask = input_ids.ne(self.config.vocab_size)
+        duration_predictions = duration_predictions.masked_select(attention_mask)
+        duration_labels_ = duration_labels.masked_select(attention_mask)
+        duration_labels_ = torch.log(duration_labels_.float() + self.duration_predictor.log_domain_offset)
+        duration_loss = F.mse_loss(duration_predictions, duration_labels_)
 
         time_embeddings = self.time_cond_mlp(timesteps)
 
@@ -228,12 +222,7 @@ class FlowMatchingModel(PreTrainedModel):
         return ModelOutput(loss=loss)
 
     @torch.inference_mode()
-    def sample(
-        self,
-        input_ids: torch.LongTensor,
-        past_spectrogram: Optional[torch.FloatTensor] = None,
-        past_durations: Optional[torch.LongTensor] = None,
-    ) -> ModelOutput:
+    def sample(self, input_ids: torch.LongTensor) -> ModelOutput:
         """
         Args:
             input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
@@ -248,30 +237,18 @@ class FlowMatchingModel(PreTrainedModel):
         inputs_embeds = self.embed_tokens(input_ids)
 
         # forward duration predictor
-        duration_predictions = None
+        duration_predictions = self.duration_predictor(inputs_embeds)
+        duration_predictions = duration_predictions.masked_fill(~mask, 0.0)
 
-        if self.config.predict_duration:
-            duration_predictions = self.duration_predictor(inputs_embeds)
-            duration_predictions = duration_predictions.masked_fill(~mask, 0.0)
+        inputs_embeds = length_regulator(inputs_embeds, duration_predictions)
 
-            # teacher forcing past syllabic unit durations
-            if past_durations is not None:
-                duration_predictions[:, : past_durations.shape[1]] = past_durations
-
-            inputs_embeds = length_regulator(inputs_embeds, duration_predictions)
-
-            # update mask
-            lengths = duration_predictions.sum(dim=1, keepdim=True)  # (bsz, 1)
-            mask = torch.arange(0, lengths.max(), device=lengths.device).unsqueeze(0) < lengths
+        # update mask
+        lengths = duration_predictions.sum(dim=1, keepdim=True)  # (bsz, 1)
+        mask = torch.arange(0, lengths.max(), device=lengths.device).unsqueeze(0) < lengths
 
         bsz, seq_len, _ = inputs_embeds.shape
         xt = torch.randn(bsz, seq_len, self.config.num_mel_bins, device=inputs_embeds.device)
         expand_mask = torch.cat([mask, mask])
-
-        # causal context
-        x_ctx = torch.zeros_like(xt)
-        if past_spectrogram is not None:
-            x_ctx[:, : past_spectrogram.shape[1]] = (past_spectrogram - self.config.mean) / self.config.std
 
         # rotary embeddings
         position_ids = torch.arange(inputs_embeds.shape[1], device=inputs_embeds.device).unsqueeze(0)
@@ -282,8 +259,8 @@ class FlowMatchingModel(PreTrainedModel):
 
             # concat source signal, semantic / phoneme conditioning embed, and conditioning
             # and project
-            hidden_states_cond = torch.cat([xt, inputs_embeds, x_ctx], dim=-1)
-            hidden_states_uncond = torch.cat([xt, torch.zeros_like(inputs_embeds), x_ctx], dim=-1)
+            hidden_states_cond = torch.cat([xt, inputs_embeds], dim=-1)
+            hidden_states_uncond = torch.cat([xt, torch.zeros_like(inputs_embeds)], dim=-1)
             hidden_states = torch.cat([hidden_states_cond, hidden_states_uncond])
             hidden_states = self.to_embed(hidden_states)
 
@@ -332,12 +309,7 @@ class FlowMatchingWithBigVGan(PreTrainedModel):
         return model
 
     @torch.inference_mode()
-    def forward(
-        self,
-        input_ids: torch.LongTensor,
-        past_spectrogram: Optional[torch.FloatTensor] = None,
-        past_durations: Optional[torch.LongTensor] = None,
-    ) -> ModelOutput:
+    def forward(self, input_ids: torch.LongTensor) -> ModelOutput:
         """
         Args:
             input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
@@ -346,59 +318,7 @@ class FlowMatchingWithBigVGan(PreTrainedModel):
         Returns:
             waveform (`list` of `torch.FloatTensor` of shape `(1, (spectrogram_length - 1) * 320 + 400)`):
                 Synthesized waveforms.
-
-        Example:
-
-        ```python
-        >>> chunk_size = 10
-        >>> past_input_ids = torch.empty(0, dtype=units.dtype, device=units.device)
-        >>> past_spectrogram = None
-        >>> past_durations = None
-
-        >>> for input_ids in torch.split(units, chunk_size):
-        >>>     # unit-to-speech synthesis
-        >>>     outputs = decoder(torch.cat([past_input_ids, input_ids]).unsqueeze(0), past_spectrogram, past_durations)
-        >>>     generated_speech = outputs.waveform.squeeze(0).cpu().numpy()
-
-        >>>     # update past context to last chunk only
-        >>>     past_input_ids = input_ids
-        >>>     past_spectrogram = outputs.spectrogram
-        >>>     past_durations = outputs.durations
-
-        >>>     yield 16000, generated_speech
-        ```
         """
-        outputs = self.model.sample(input_ids, past_spectrogram, past_durations)
+        outputs = self.model.sample(input_ids)
         waveform = self.vocoder(outputs.spectrogram)
-
-        # remove past context
-        if past_spectrogram is not None:
-            waveform = waveform[:, (past_spectrogram.shape[1] - 1) * 320 + 400 :]
-            outputs.spectrogram = outputs.spectrogram[:, past_spectrogram.shape[1] :]
-            outputs.durations = outputs.durations[:, past_durations.shape[1] :]
-
-        return ModelOutput(waveform=waveform, spectrogram=outputs.spectrogram, durations=outputs.durations)
-
-    def forward_streaming(self, input_ids: torch.LongTensor, chunk_size: int = 10) -> ModelOutput:
-        """
-        Args:
-            input_ids (`torch.LongTensor` of shape `(sequence_length,)`):
-                Input syllabic unit sequence.
-        """
-        past_input_ids = torch.empty(0, dtype=input_ids.dtype, device=input_ids.device)
-        past_spectrogram = None
-        past_durations = None
-        waveform = []
-
-        for chunk_input_ids in torch.split(input_ids, chunk_size):
-            # unit-to-speech synthesis
-            outputs = self(torch.cat([past_input_ids, chunk_input_ids]).unsqueeze(0), past_spectrogram, past_durations)
-            waveform.append(outputs.waveform)
-
-            # update past context to last chunk only
-            past_input_ids = chunk_input_ids
-            past_spectrogram = outputs.spectrogram
-            past_durations = outputs.durations
-
-        waveform = torch.cat(waveform, dim=1)
         return ModelOutput(waveform=waveform)

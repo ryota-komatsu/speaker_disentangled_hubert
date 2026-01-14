@@ -43,7 +43,7 @@ class EvaluationCallback(TrainerCallback):
 
         return evaluator
 
-    def on_step_end(self, args, state, control, model, processing_class, **kwargs):
+    def on_save(self, args, state, control, model, processing_class, **kwargs):
         if state.global_step % args.eval_steps != 0 or not state.is_world_process_zero:
             return
 
@@ -87,6 +87,7 @@ class EvaluationCallback(TrainerCallback):
         sWUGGY = self.eval_dataset["sWUGGY"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
         sBLIMP = self.eval_dataset["sBLIMP"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
         tSC = self.eval_dataset["tSC"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
+        sSC = self.eval_dataset["sSC"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
 
         def is_in_vocab(example):
             return example["frequency"] != 0
@@ -101,30 +102,7 @@ class EvaluationCallback(TrainerCallback):
                 np.mean(sWUGGY.filter(is_out_of_vocab)["metrics"]),
                 np.mean(sBLIMP["metrics"]),
                 np.mean(tSC["metrics"]),
+                np.mean(sSC["metrics"]),
             ],
-            index=["sWUGGY", "sWUGGY IV", "sWUGGY OOV", "sBLIMP", "tSC"],
+            index=["sWUGGY", "sWUGGY IV", "sWUGGY OOV", "sBLIMP", "tSC", "sSC"],
         ).to_csv(Path(args.output_dir) / f"score_test_{state.global_step}.csv")
-
-
-class DefrostCallback(TrainerCallback):
-    def __init__(self, defrost_steps: int, vocab_size: int):
-        self.defrost_steps = defrost_steps
-        self.vocab_size = vocab_size
-
-    def on_train_begin(self, args, state, control, model, **kwargs):
-        if state.global_step < self.defrost_steps:
-            model.model.layers.requires_grad_(False)
-            model.model.norm.requires_grad_(False)
-            self.handle_input_embeddings = model.get_input_embeddings().weight.register_hook(
-                lambda grad: torch.cat([torch.zeros_like(grad[: self.vocab_size]), grad[self.vocab_size :]])
-            )
-            self.handle_output_embeddings = model.get_output_embeddings().weight.register_hook(
-                lambda grad: torch.cat([torch.zeros_like(grad[: self.vocab_size]), grad[self.vocab_size :]])
-            )
-
-    def on_step_end(self, args, state, control, model, **kwargs):
-        if state.global_step == self.defrost_steps:
-            self.handle_input_embeddings.remove()
-            self.handle_output_embeddings.remove()
-            model.model.layers.requires_grad_(True)
-            model.model.norm.requires_grad_(True)

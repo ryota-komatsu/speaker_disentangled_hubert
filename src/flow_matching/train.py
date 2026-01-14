@@ -93,10 +93,8 @@ def train_dit(config):
     train_dataset = train_dataset.with_format("torch")
     eval_dataset = eval_dataset.with_format("torch")
 
-    model = FlowMatchingModel(
-        FlowMatchingConfig(**OmegaConf.to_container(config.flow_matching.model_args)),
-        get_input_embeddings(config.speech2unit.model_name_or_path),
-    )
+    model = FlowMatchingModel(FlowMatchingConfig(**OmegaConf.to_container(config.flow_matching.model_args)))
+    model.set_input_embeddings(get_input_embeddings(config.speech2unit.model_name_or_path))
 
     training_args = TrainingArguments(**OmegaConf.to_container(config.flow_matching.training_args))
 

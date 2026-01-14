@@ -62,15 +62,7 @@ class S5Hubert(nn.Module):
         )
         self.loss_fn = nn.MSELoss()
 
-        self.reset_parameters()
         self.make_teacher(head_out_size, head_hidden_size)
-
-    def reset_parameters(self):
-        for m in self.student_projector.modules():
-            init_module(m)
-
-        for m in self.student_predictor.modules():
-            init_module(m)
 
     def make_teacher(
         self,

@@ -110,7 +110,7 @@ def deepspeed_load_checkpoint(deepspeed_engine, checkpoint_path, load_module_str
             checkpoint_path,
             load_module_strict=load_module_strict,
             load_optimizer_states=False,
-            load_lr_scheduler_states=True,
+            load_lr_scheduler_states=False,
         )
         if load_path is None:
             raise ValueError(f"[deepspeed] failed to resume from checkpoint {checkpoint_path}")
