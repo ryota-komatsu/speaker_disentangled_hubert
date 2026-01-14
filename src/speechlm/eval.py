@@ -49,6 +49,7 @@ def evaluate(config):
         "sWUGGY": load_dataset(config.dataset.name, "sWUGGY"),
         "sBLIMP": load_dataset(config.dataset.name, "sBLIMP"),
         "tSC": load_dataset(config.dataset.name, "tSC"),
+        "sSC": load_dataset(config.dataset.name, "sSC"),
     }
 
     map_kwargs = dict(batched=True, batch_size=config.training_args.per_device_eval_batch_size)
@@ -56,6 +57,7 @@ def evaluate(config):
     sWUGGY = eval_dataset["sWUGGY"]["test"].map(get_evaluator(model, tokenizer), **map_kwargs)
     sBLIMP = eval_dataset["sBLIMP"]["test"].map(get_evaluator(model, tokenizer), **map_kwargs)
     tSC = eval_dataset["tSC"]["test"].map(get_evaluator(model, tokenizer), **map_kwargs)
+    sSC = eval_dataset["sSC"]["test"].map(get_evaluator(model, tokenizer), **map_kwargs)
 
     def is_in_vocab(example):
         return example["frequency"] != 0
@@ -70,6 +72,7 @@ def evaluate(config):
             np.mean(sWUGGY.filter(is_out_of_vocab)["metrics"]),
             np.mean(sBLIMP["metrics"]),
             np.mean(tSC["metrics"]),
+            np.mean(sSC["metrics"]),
         ],
-        index=["sWUGGY", "sWUGGY IV", "sWUGGY OOV", "sBLIMP", "tSC"],
+        index=["sWUGGY", "sWUGGY IV", "sWUGGY OOV", "sBLIMP", "tSC", "sSC"],
     ).to_csv(Path(config.training_args.output_dir) / f"score_test_{global_step}.csv")

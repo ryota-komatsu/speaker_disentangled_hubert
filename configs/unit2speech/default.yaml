@@ -6,7 +6,6 @@ dataset:
   name: "ryota-komatsu/s5-hubert"  # https://huggingface.co/datasets
   libritts_dir: "data/LibriTTS_R" # ${root}/train-clean-100, train-clean-360, ...
   hfc_dir: "data/hi-fi-captain/en-US"
-  dailytalk_dir: "data/dailytalk/data"
 
   ext_audio: ".wav"
 
@@ -15,19 +14,20 @@ dataset:
 flow_matching:
   training_args:
     output_dir: "models/flow_matching"
-    per_device_train_batch_size: 256
+    per_device_train_batch_size: 100
+    gradient_accumulation_steps: 2
     learning_rate: 0.001
     weight_decay: 0.01
+    adam_beta1: 0.9
+    adam_beta2: 0.95
     max_grad_norm: 0.1
-    # num_train_epochs: 200
-    max_steps: 400000
-    lr_scheduler_type: "cosine_with_min_lr"
-    lr_scheduler_kwargs: {"min_lr": 0.0001}
+    max_steps: 200000
+    lr_scheduler_type: "constant_with_warmup"
     warmup_steps: 1000
-    save_steps: 100000
+    save_steps: 10000
     save_total_limit: 2
     fp16: true
-    eval_steps: 100000
+    eval_steps: 10000
     remove_unused_columns: false
     optim: "adamw_torch_fused"
     ddp_find_unused_parameters: false
@@ -39,6 +39,8 @@ flow_matching:
     gradient_accumulation_steps: 50
     learning_rate: 0.0001
     weight_decay: 0.01
+    adam_beta1: 0.9
+    adam_beta2: 0.95
     max_grad_norm: 0.1
     max_steps: 50
     save_steps: 10
@@ -46,7 +48,7 @@ flow_matching:
     remove_unused_columns: false
     optim: "adamw_torch_fused"
     ddp_find_unused_parameters: false
-    resume_from_checkpoint: "models/flow_matching/checkpoint-400000"
+    resume_from_checkpoint: "models/flow_matching/checkpoint-200000"
 
   model_args:
     vocab_size: 16384

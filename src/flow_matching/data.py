@@ -64,12 +64,6 @@ def tokenize(config):
     dataset = dataset.map(get_tokenize_fn(encoder, config.dataset.hfc_dir, ""), remove_columns="audio")
     dataset.push_to_hub(config.dataset.name, "Hi-Fi-CAPTAIN")
 
-    # DailyTalk
-    # data_files = {"train": glob.glob(os.path.join(config.dataset.dailytalk_dir, "**/*.wav"), recursive=True)}
-    # dataset = load_dataset("audiofolder", data_files=data_files, features=features)
-    # dataset = dataset.map(get_tokenize_fn(encoder, config.dataset.dailytalk_dir, ".txt"), remove_columns="audio")
-    # dataset.push_to_hub(config.dataset.name, "DailyTalk")
-
 
 def get_tokenize_fn(encoder, data_dir, ext_txt: str = ".normalized.txt"):
     data_dir = Path(data_dir).resolve()

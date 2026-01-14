@@ -26,26 +26,15 @@ def synthesize(audio: str):
     # encode a waveform into syllabic units
     units = encoder(waveform.to(encoder.device))[0]["units"]  # [3950, 67, ..., 503]
 
-    chunk_size = 10
-    past_input_ids = torch.empty(0, dtype=units.dtype, device=units.device)
-    past_spectrogram = None
-    past_durations = None
+    # unit-to-speech synthesis
+    outputs = decoder(units.unsqueeze(0))
+    generated_speech = outputs.waveform.squeeze(0).cpu().numpy()
 
-    for input_ids in torch.split(units, chunk_size):
-        # unit-to-speech synthesis
-        outputs = decoder(torch.cat([past_input_ids, input_ids]).unsqueeze(0), past_spectrogram, past_durations)
-        generated_speech = outputs.waveform.squeeze(0).cpu().numpy()
-
-        # update past context to last chunk only
-        past_input_ids = input_ids
-        past_spectrogram = outputs.spectrogram
-        past_durations = outputs.durations
-
-        yield 16000, generated_speech
+    return 16000, generated_speech
 
 
 if __name__ == "__main__":
-    with gr.Blocks(title="Streaming Speech Resynthesis") as demo:
+    with gr.Blocks(title="Speech Resynthesis") as demo:
         with gr.Row():
             audio_in = gr.Audio(type="filepath", label="Original speech")
 
