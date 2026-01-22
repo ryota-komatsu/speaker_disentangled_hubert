@@ -76,6 +76,15 @@ class LibriSpeech(torchaudio.datasets.LIBRISPEECH):
             "wav_names": wav_names,
         }
 
+    @staticmethod
+    def collate_fn2(batch) -> Dict[str, torch.Tensor]:
+        teacher_input_values = [item["teacher_input_values"].unsqueeze(0) for item in batch]
+        student_input_values = [item["student_input_values"].unsqueeze(0) for item in batch]
+        return {
+            "teacher_input_values": teacher_input_values,
+            "student_input_values": student_input_values,
+        }
+
 
 class LibriLight(torch.utils.data.Dataset):
     def __init__(

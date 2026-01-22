@@ -42,6 +42,9 @@ def evaluate(config):
         ref_boundary = np.array([[float(ref["start"]), float(ref["end"])] for ref in sample["syllables"]])
         hyp_boundary = ckpt["segments"]
 
+        if len(ref_boundary) == 0:
+            continue
+
         # maximize temporal intersection-over-union (IoU)
         ref_indices, hyp_indices = match_cluster(ref_boundary, hyp_boundary)
 
@@ -54,7 +57,7 @@ def evaluate(config):
             hyp_syllables = ckpt["units"]
 
         matching_counter.update(zip(ref_syllables[ref_indices], hyp_syllables[hyp_indices]))
-        syllable_counter.update(ref_syllables[ref_indices])
+        syllable_counter.update(ref_syllables)
 
         # unit frequency
         audio_path = Path(config.dataset.root) / "LibriSpeech" / sample["file_name"]
@@ -71,10 +74,14 @@ def evaluate(config):
     p_xy = p_xy.to_numpy()
     p_xy = p_xy / np.sum(p_xy)
 
+    syllable_count = np.array(list(syllable_counter.values()))
+    p_syllable = syllable_count / np.sum(syllable_count)
+    H = -np.sum(p_syllable * np.log(p_syllable))
+
     clustering_results = {
         "syllable_purity": compute_syllable_purity(p_xy),
         "cluster_purity": compute_cluster_purity(p_xy),
-        "mutual_info": compute_mutual_info(p_xy),
+        "syllable_normalized_mutual_info": compute_mutual_info(p_xy) / H,
     }
 
     segmentation_results = BoundaryDetectionEvaluator(

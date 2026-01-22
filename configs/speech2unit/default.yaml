@@ -29,10 +29,12 @@ model:
   head_hidden_size: 2048
   ema_decay: 0.999
   segmentation_layer: 8
+  teacher_update_steps: []
 
 training_args:
   output_dir: "models/s5-hubert"
   per_device_train_batch_size: 256
+  gradient_accumulation_steps: 1
   learning_rate: 0.0001
   weight_decay: 0.01
   max_grad_norm: 0.001

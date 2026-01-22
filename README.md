@@ -30,7 +30,7 @@ import re
 
 import torch
 import torchaudio
-from transformers import AutoModelForCausalLM, PreTrainedTokenizerFast
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from src.flow_matching import FlowMatchingWithBigVGan
 from src.s5hubert import S5HubertForSyllableDiscovery
@@ -41,7 +41,7 @@ wav_path = "/path/to/wav"
 encoder = S5HubertForSyllableDiscovery.from_pretrained("ryota-komatsu/s5-hubert", device_map="cuda")
 decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/s5-hubert-decoder-ft", device_map="cuda")
 speechlm = AutoModelForCausalLM.from_pretrained("/path/to/speechLM", device_map="cuda")
-tokenizer = PreTrainedTokenizerFast.from_pretrained("/path/to/speechLM")
+tokenizer = AutoTokenizer.from_pretrained("/path/to/speechLM")
 
 # load a waveform
 waveform, sr = torchaudio.load(wav_path)

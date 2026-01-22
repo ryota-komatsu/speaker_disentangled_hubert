@@ -8,15 +8,24 @@ from omegaconf import OmegaConf
 from transformers import Trainer, TrainerCallback, TrainingArguments
 
 from ...sdhubert.utils.syllable import BoundaryDetectionEvaluator
-from ..models.s5hubert import S5Hubert
+from ..models.s5hubert import S5Hubert, S5HubertForSelfSegmentation
 from ..models.s5hubert_dino import S5HubertDino
-from ..utils.data import LibriLight
+from ..utils.data import LibriLight, LibriSpeech
 from ..utils.mincut import parallel_mincut
 
 
 class EMACallback(TrainerCallback):
     def on_step_end(self, args, state, control, model, **kwargs):
         model.update_teacher()
+
+
+class TeacherUpdateCallback(TrainerCallback):
+    def __init__(self, teacher_update_steps):
+        self.teacher_update_steps = teacher_update_steps
+
+    def on_step_end(self, args, state, control, model, **kwargs):
+        if state.global_step in self.teacher_update_steps:
+            model.update_teacher()
 
 
 class DefrostCallback(TrainerCallback):
@@ -163,5 +172,20 @@ def train(config):
         train_dataset=train_dataset,
         data_collator=LibriLight.collate_fn,
         callbacks=[EMACallback(), DefrostCallback(), SavingCallback(), EvaluationCallback(config)],
+    )
+    trainer.train(resume_from_checkpoint=config.training_args.resume_from_checkpoint)
+
+
+def finetune(config):
+    model = S5HubertForSelfSegmentation(config.model.model_name_or_path)
+    training_args = TrainingArguments(**OmegaConf.to_container(config.training_args))
+    train_dataset = LibriSpeech(root=config.dataset.root, max_sample_size=None)
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        data_collator=LibriSpeech.collate_fn2,
+        callbacks=[TeacherUpdateCallback(config.model.teacher_update_steps), SavingCallback()],
     )
     trainer.train(resume_from_checkpoint=config.training_args.resume_from_checkpoint)

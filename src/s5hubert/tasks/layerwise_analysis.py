@@ -11,6 +11,8 @@ from ...sdhubert.utils.syllable import BoundaryDetectionEvaluator
 from ..utils.mincut import parallel_mincut
 
 plt.rcParams["text.usetex"] = True
+plt.rcParams["pdf.fonttype"] = 42
+plt.rcParams["ps.fonttype"] = 42
 
 
 @torch.inference_mode()

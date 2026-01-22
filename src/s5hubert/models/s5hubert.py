@@ -20,6 +20,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 from torch import nn
+from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoConfig, AutoModel
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.hubert.modeling_hubert import HubertModel, HubertPreTrainedModel
@@ -103,7 +104,7 @@ class S5Hubert(nn.Module):
         teacher_attention_mask: Optional[torch.Tensor] = None,
         student_attention_mask: Optional[torch.Tensor] = None,
         **kwargs,
-    ) -> torch.Tensor:
+    ) -> ModelOutput:
         # disable dropout
         self.student.feature_projection.eval()
         self.teacher_encoder_layers.eval()
@@ -487,6 +488,109 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
     def get_hidden_states(self, input_values: torch.Tensor) -> torch.Tensor:
         hidden_states = self.hubert(input_values, output_hidden_states=True).hidden_states
         return hidden_states[self.segmentation_layer].squeeze(0)
+
+
+class S5HubertForSelfSegmentation(nn.Module):
+    def __init__(
+        self,
+        model_name_or_path,
+        sec_per_syllable: float = 0.15,
+        teacher_merge_threshold: Optional[float] = 0.95,
+        segmenter_merge_threshold: Optional[float] = 0.7,
+        min_duration: int = 3,
+        max_duration: int = 35,
+    ):
+        config = AutoConfig.from_pretrained(
+            model_name_or_path,
+            num_hidden_layers=8,
+            activation_dropout=0.0,
+            attention_dropout=0.0,
+            feat_proj_dropout=0.0,
+            final_dropout=0.0,
+            hidden_dropout=0.0,
+            hidden_dropout_prob=0.0,
+            apply_spec_augment=False,
+        )
+
+        self.sec_per_frame = np.prod(config.conv_stride) / 16000
+        self.sec_per_syllable = sec_per_syllable
+        self.teacher_merge_threshold = teacher_merge_threshold
+        self.segmenter_merge_threshold = segmenter_merge_threshold
+        self.min_duration = min_duration
+        self.max_duration = max_duration
+
+        self.student = AutoModel.from_pretrained(model_name_or_path, config=config, weights_only=False)
+        self.teacher = AutoModel.from_pretrained(model_name_or_path, config=config, weights_only=False)
+        self.segmenter = AutoModel.from_pretrained(model_name_or_path, config=config, weights_only=False)
+        self.self_segment = False
+
+        self.loss_fn = nn.MSELoss()
+
+        self.freeze_pretrained_modules()
+
+    @torch.no_grad()
+    def update_teacher(self):
+        self.teacher.load_state_dict(self.student.state_dict())
+        self.self_segment = True
+
+    def freeze_pretrained_modules(self):
+        self.student.freeze_pretrained_modules()
+        self.teacher.requires_grad_(False)
+        self.segmenter.requires_grad_(False)
+
+    def forward(
+        self,
+        teacher_input_values: List[torch.Tensor],
+        student_input_values: List[torch.Tensor],
+        **kwargs,
+    ) -> ModelOutput:
+        with torch.no_grad():
+            teacher_hidden_states = [
+                self.teacher(input_values)[0][-1].squeeze(0) for input_values in teacher_input_values
+            ]
+
+            if self.self_segment:
+                segmenter_hidden_states = teacher_hidden_states
+                merge_threshold = self.teacher_merge_threshold
+            else:
+                segmenter_hidden_states = [
+                    self.segmenter(input_values).last_hidden_state.squeeze(0) for input_values in teacher_input_values
+                ]
+                merge_threshold = self.segmenter_merge_threshold
+
+            lengths = torch.tensor([dense.shape[0] for dense in segmenter_hidden_states], device=self.segmenter.device)
+            segmenter_hidden_states = pad_sequence(segmenter_hidden_states, batch_first=True)
+
+            _, _, batch_frame_boundary = mincut_torch(
+                segmenter_hidden_states,
+                lengths,
+                sec_per_frame=self.sec_per_frame,
+                sec_per_syllable=self.sec_per_syllable,
+                merge_threshold=merge_threshold,
+                min_duration=self.min_duration,
+                max_duration=self.max_duration,
+            )
+
+            labels = torch.cat(
+                [
+                    torch.repeat_interleave(
+                        torch.stack([dense[l:r].mean(0) for l, r in frame_boundary]),
+                        frame_boundary[:, 1] - frame_boundary[:, 0],
+                        dim=0,
+                    )
+                    for dense, frame_boundary in zip(teacher_hidden_states, batch_frame_boundary)
+                ]
+            )
+
+        student_hidden_states = [self.student(input_values)[0][-1].squeeze(0) for input_values in student_input_values]
+        lengths = torch.tensor([dense.shape[0] for dense in student_hidden_states], device=self.student.device)
+        student_padding_mask = torch.arange(lengths.max(), device=self.student.device).unsqueeze(0) < lengths.unsqueeze(
+            1
+        )
+        student_hidden_states = pad_sequence(student_hidden_states, batch_first=True)
+
+        loss = self.loss_fn(student_hidden_states[student_padding_mask], labels)
+        return ModelOutput(loss=loss)
 
 
 class S5HubertForSequenceClassification(nn.Module):
