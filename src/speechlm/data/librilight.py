@@ -48,7 +48,11 @@ def normalize_text(s: str) -> str:
     return s
 
 
-def tokenize_librilight(config, num_shards: int = 1, shard_index: int = 0):
+def tokenize_librilight(
+    config,
+    num_shards: int = 1,
+    shard_index: int = 0,
+):
     from ...s5hubert import S5HubertForSyllableDiscovery
 
     data_files = [
