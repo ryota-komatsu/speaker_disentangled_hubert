@@ -1,9 +1,35 @@
+# from https://github.com/facebookresearch/libri-light/blob/main/data_preparation/cut_by_vad.py
+
+# MIT License
+#
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+import glob
 import json
 import math
 import os
 import re
 from pathlib import Path
 
+import torch
 import torchaudio
 from datasets import load_dataset
 from tqdm import tqdm
@@ -46,6 +72,97 @@ def normalize_text(s: str) -> str:
     s = re.sub(r"\s,", ",", s)
 
     return s
+
+
+def tokenize_librilight_(
+    num_shards: int = 1,
+    shard_index: int = 0,
+    data_dir: str = "data/librilight",
+    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    tgt_len_sec: int = 25,
+    min_len_sec: int = 5,
+    max_len_sec: int = 30,
+):
+    from ...s5hubert import S5HubertForSyllableDiscovery
+
+    tgt_chunk_size = tgt_len_sec * 16000 + 80
+    min_chunk_size = min_len_sec * 16000 + 80
+    max_chunk_size = max_len_sec * 16000 + 80
+
+    data_files = list(glob.glob(os.path.join(data_dir, "*/*/*/*.json")))
+    shard_size = (len(data_files) // num_shards) + 1
+    dataset = data_files[shard_index * shard_size : (shard_index + 1) * shard_size]
+
+    encoder = S5HubertForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+
+    manifest_path = Path(data_dir) / f"manifest{shard_index}.json"
+
+    with open(manifest_path, "w") as f:
+        for data_file in tqdm(dataset):
+            with open(data_file) as g:
+                example = json.load(g)
+
+            audio_filepath = Path(data_file).with_suffix(".flac")
+            data, sr = torchaudio.load(audio_filepath)
+
+            chunks = []
+            to_stitch = []
+            length_accumulated = 0.0
+
+            # cut by VAD
+            for start, end in example["voice_activity"]:
+                start_index = int(start * 16000)
+                end_index = int(end * 16000)
+                slice = data[:, start_index:end_index]
+
+                if length_accumulated + (end - start) > tgt_len_sec and length_accumulated > 0:
+                    input_values = torch.cat(to_stitch, dim=1)
+
+                    if input_values.shape[1] < max_chunk_size:
+                        chunks.append(input_values)
+                    else:
+                        input_values = list(torch.split(input_values, tgt_chunk_size, dim=1))
+
+                        if len(input_values) > 1 and input_values[-1].shape[1] < min_chunk_size:
+                            input_values[-2] = torch.cat([input_values[-2], input_values[-1]], dim=1)
+                            input_values.pop()
+
+                        chunks.extend(input_values)
+
+                    to_stitch = []
+                    length_accumulated = 0.0
+
+                to_stitch.append(slice)
+                length_accumulated += end - start
+
+            # last chunk
+            if to_stitch:
+                input_values = torch.cat(to_stitch, dim=1)
+
+                if input_values.shape[1] < max_chunk_size:
+                    chunks.append(input_values)
+                else:
+                    input_values = list(torch.split(input_values, tgt_chunk_size, dim=1))
+
+                    if len(input_values) > 1 and input_values[-1].shape[1] < min_chunk_size:
+                        input_values[-2] = torch.cat([input_values[-2], input_values[-1]], dim=1)
+                        input_values.pop()
+
+                    chunks.extend(input_values)
+
+            # tokenize
+            for chunk_index, input_values in enumerate(chunks):
+                id_ = str(Path(data_file).relative_to(data_dir).with_suffix("")) + f"_{chunk_index}"
+                outputs = encoder(input_values.to(encoder.device))
+
+                example = {
+                    "id": id_,
+                    "units": outputs[0]["units"].tolist(),
+                    "durations": outputs[0]["durations"].tolist(),
+                    "intermediate_units": outputs[0]["intermediate_units"].tolist(),
+                }
+                json.dump(example, f)
+                f.write("\n")
 
 
 def tokenize_librilight(
