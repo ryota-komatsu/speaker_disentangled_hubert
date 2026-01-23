@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import List, Optional
+from typing import Optional
 
 import torch
 import torch.nn.functional as F
@@ -140,7 +140,7 @@ class FlowMatchingModel(PreTrainedModel):
         super().__init__(config)
         self.time_cond_mlp = TimestepEmbedding(config.hidden_size)
         self.embed_tokens = nn.Embedding(config.vocab_size + 1, config.embedding_dim, padding_idx=config.vocab_size)
-        self.to_embed = nn.Linear(config.num_mel_bins + config.embedding_dim + config.num_mel_bins, config.hidden_size)
+        self.to_embed = nn.Linear(config.num_mel_bins + config.embedding_dim, config.hidden_size)
 
         self.layers = nn.ModuleList([DiTLayer(config) for _ in range(config.num_hidden_layers)])
         self.norm = nn.RMSNorm(config.hidden_size)
@@ -196,15 +196,7 @@ class FlowMatchingModel(PreTrainedModel):
         dropout_mask = dropout_mask.expand_as(inputs_embeds)
         inputs_embeds.masked_fill_(dropout_mask, 0.0)
 
-        # causal context for streaming inference
-        ctx_len = input_ids.ne(self.config.vocab_size).sum(dim=1) * torch.rand(bsz, device=input_ids.device) * 0.3
-        ctx_len = ctx_len * (torch.rand(bsz, device=input_ids.device) < 0.5)
-        ctx_mask = torch.arange(input_ids.shape[1], device=ctx_len.device).unsqueeze(0) < ctx_len.unsqueeze(1)
-        ctx_len = duration_labels.masked_fill(~ctx_mask, 0).sum(dim=1)
-        ctx_mask = torch.arange(spectrogram_labels.shape[1], device=ctx_len.device).unsqueeze(0) < ctx_len.unsqueeze(1)
-        x_ctx = spectrogram_labels.masked_fill(~ctx_mask.unsqueeze(2).expand_as(spectrogram_labels), 0)
-
-        hidden_states = torch.cat([xt, inputs_embeds, x_ctx], dim=-1)
+        hidden_states = torch.cat([xt, inputs_embeds], dim=-1)
         hidden_states = self.to_embed(hidden_states)
 
         # rotary embeddings
@@ -218,7 +210,7 @@ class FlowMatchingModel(PreTrainedModel):
         hidden_states = self.norm(hidden_states)
         vt = self.to_pred(hidden_states)
 
-        loss = F.mse_loss(vt[mask.logical_and(~ctx_mask)], ut[mask.logical_and(~ctx_mask)]) + duration_loss
+        loss = F.mse_loss(vt[mask], ut[mask]) + duration_loss
         return ModelOutput(loss=loss)
 
     @torch.inference_mode()

@@ -7,15 +7,11 @@ import torchaudio
 from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 
-from ...sylber.sylber import Segmenter
 from ..models.hubert import HubertForSyllableDiscovery
 from ..models.s5hubert import S5HubertForSyllableDiscovery
 from ..models.vghubert import VGHubertForSyllableDiscovery
 from ..utils.data import LibriSpeech
 from ..utils.mincut import parallel_mincut
-
-sys.path.append("src/SyllableLM")
-from ...SyllableLM.extract_units import SylBoostFeatureReader
 
 MODELS = {
     "hubert": HubertForSyllableDiscovery,
@@ -41,6 +37,9 @@ def syllable_segmentation(config):
             segmentation_layer=config.model.segmentation_layer,
         ).cuda()
     elif config.model.model_type == "sylboost":
+        sys.path.append("src/SyllableLM")
+        from ...SyllableLM.extract_units import SylBoostFeatureReader
+
         model = SylBoostFeatureReader(
             config.path.checkpoint,
             config.path.quantizer1,
@@ -48,6 +47,8 @@ def syllable_segmentation(config):
             config.model.model_key,
         )
     elif config.model.model_type == "sylber":
+        from ...sylber.sylber import Segmenter
+
         model = Segmenter(config.path.checkpoint)
     else:
         return
