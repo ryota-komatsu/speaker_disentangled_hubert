@@ -6,7 +6,7 @@ import jiwer
 import pandas as pd
 import torch
 from datasets import load_dataset
-from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, HubertModel, pipeline
 
 from ..s5hubert import S5HubertForSyllableDiscovery
 from .models import FlowMatchingWithBigVGan
@@ -15,6 +15,10 @@ sys.path.append("src/utmos")
 warnings.simplefilter("ignore", FutureWarning)
 warnings.simplefilter("ignore", DeprecationWarning)
 from ..utmos.score import Score
+
+sys.path.append("src/textlesslib")
+from src.textlesslib.textless import dispatch_quantizer
+from src.textlesslib.textless.vocoders.hifigan.vocoder import CodeHiFiGANVocoder
 
 
 def len_filter(example):
@@ -58,6 +62,14 @@ def get_eval_fn(encoder, decoder, processor, pipe, scorer, data_dir):
 def evaluate(config):
     encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
     decoder = FlowMatchingWithBigVGan.from_pretrained(config.unit2speech.model_name_or_path, device_map="cuda")
+
+    # model = HubertModel.from_pretrained("slprl/mhubert-base-25hz", num_hidden_layers=11, device_map="cuda")
+    # quantizer = dispatch_quantizer("mhubert-base-25hz", "kmeans", 500)
+    # vocoder = CodeHiFiGANVocoder.by_name(
+    #     dense_model_name="mhubert-base-25hz",
+    #     quantizer_model_name="kmeans",
+    #     vocab_size=500,
+    # ).cuda()
 
     dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 

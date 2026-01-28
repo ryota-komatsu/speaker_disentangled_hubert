@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import Dict
 
@@ -6,7 +7,12 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from datasets import load_dataset
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from nltk.tokenize import NLTKWordTokenizer
+from transformers import AutoModelForCausalLM, AutoModelForSpeechSeq2Seq, AutoProcessor, AutoTokenizer, pipeline
+
+from ..flow_matching import FlowMatchingWithBigVGan
+from ..s5hubert import S5HubertForSyllableDiscovery
+from .utils import calc_auto_bleu
 
 
 def get_evaluator(model, processing_class):
@@ -40,39 +46,124 @@ def get_evaluator(model, processing_class):
     return evaluator
 
 
-def evaluate(config):
-    model = AutoModelForCausalLM.from_pretrained(config.training_args.resume_from_checkpoint, device_map="cuda")
-    tokenizer = AutoTokenizer.from_pretrained(config.training_args.resume_from_checkpoint)
-    global_step = config.training_args.resume_from_checkpoint.rsplit("-", 1)[1]
+def get_generation_evaluator(
+    encoder: S5HubertForSyllableDiscovery,
+    speechlm,
+    speechlm_tokenizer,
+    decoder: FlowMatchingWithBigVGan,
+    pipe,
+    textlm,
+    textlm_tokenizer,
+    nltk_word_tokenizer: NLTKWordTokenizer,
+    prompt_length: int = 3,
+    generation_length: int = 10,
+    do_sample: bool = True,
+    temperature: float = 0.8,
+    auto_bleu_n: int = 2,
+):
+    @torch.inference_mode()
+    def _evaluate(example):
+        # 1. encode a waveform into syllabic units
+        prompt = example["audio"]["array"][: prompt_length * example["audio"]["sampling_rate"]]
+        prompt = prompt.unsqueeze(0).to(encoder.device)
+        outputs = encoder(prompt)
+        units = outputs[0]["units"][:-1]  # [3950, 67, ..., 503]
 
+        # 2. speech language modeling
+        input_text = "".join(f"<{unit}>" for unit in units)
+        input_ids = speechlm_tokenizer(input_text, padding=True, return_tensors="pt").input_ids.to(speechlm.device)
+        generated_ids = speechlm.generate(input_ids=input_ids, do_sample=do_sample, temperature=temperature)[0]
+        units = speechlm_tokenizer.decode(generated_ids)
+        units = torch.tensor([int(unit) for unit in re.findall(r"<(\d+)>", units)], device=decoder.device)
+
+        # 3. unit-to-speech synthesis
+        generated_speech = decoder(units.unsqueeze(0)).waveform
+        generated_speech = generated_speech[:, : generation_length * 16000]
+        generated_speech = generated_speech.cpu().squeeze(0).numpy()
+
+        # 4. ASR
+        generated_text = pipe(generated_speech, generate_kwargs={"language": "english"}, return_timestamps=True)["text"]
+
+        # 5. negative log-likelihood
+        input_ids = textlm_tokenizer(generated_text, padding=True, return_tensors="pt").input_ids.to(textlm.device)
+        nll = textlm(input_ids=input_ids, labels=input_ids).loss.cpu().item()
+
+        example["nll"] = nll
+        example["auto-bleu"] = calc_auto_bleu(generated_text, nltk_word_tokenizer, auto_bleu_n)
+
+        return example
+
+    return _evaluate
+
+
+def evaluate(config):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+
+    # 1. load models
+    nltk_word_tokenizer = NLTKWordTokenizer()
+
+    encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map=device)
+    decoder = FlowMatchingWithBigVGan.from_pretrained(config.unit2speech.model_name_or_path, device_map=device)
+
+    speechlm = AutoModelForCausalLM.from_pretrained(config.training_args.resume_from_checkpoint, device_map=device)
+    speechlm_tokenizer = AutoTokenizer.from_pretrained(config.training_args.resume_from_checkpoint)
+
+    textlm = AutoModelForCausalLM.from_pretrained(config.textlm.model_name_or_path, device_map=device)
+    textlm_tokenizer = AutoTokenizer.from_pretrained(config.textlm.model_name_or_path)
+
+    asr = AutoModelForSpeechSeq2Seq.from_pretrained(
+        config.asr.model_name_or_path,
+        dtype=dtype,
+        low_cpu_mem_usage=True,
+        use_safetensors=True,
+        device_map=device,
+    )
+    processor = AutoProcessor.from_pretrained(config.asr.model_name_or_path)
+    pipe = pipeline(
+        "automatic-speech-recognition",
+        model=asr,
+        tokenizer=processor.tokenizer,
+        feature_extractor=processor.feature_extractor,
+        dtype=dtype,
+    )
+
+    # 2. load datasets
     eval_dataset = {
         "sWUGGY": load_dataset(config.dataset.name, "sWUGGY"),
         "sBLIMP": load_dataset(config.dataset.name, "sBLIMP"),
         "tSC": load_dataset(config.dataset.name, "tSC"),
         "sSC": load_dataset(config.dataset.name, "sSC"),
+        "generation": load_dataset("audiofolder", data_dir=config.dataset.eval_dir).with_format("torch"),
     }
 
     map_kwargs = dict(batched=True, batch_size=config.training_args.per_device_eval_batch_size)
 
-    sWUGGY = eval_dataset["sWUGGY"]["test"].map(get_evaluator(model, tokenizer), **map_kwargs)
-    sBLIMP = eval_dataset["sBLIMP"]["test"].map(get_evaluator(model, tokenizer), **map_kwargs)
-    tSC = eval_dataset["tSC"]["test"].map(get_evaluator(model, tokenizer), **map_kwargs)
-    sSC = eval_dataset["sSC"]["test"].map(get_evaluator(model, tokenizer), **map_kwargs)
+    # 3. evaluate
+    sWUGGY = eval_dataset["sWUGGY"]["test"].map(get_evaluator(speechlm, speechlm_tokenizer), **map_kwargs)
+    sBLIMP = eval_dataset["sBLIMP"]["test"].map(get_evaluator(speechlm, speechlm_tokenizer), **map_kwargs)
+    tSC = eval_dataset["tSC"]["test"].map(get_evaluator(speechlm, speechlm_tokenizer), **map_kwargs)
+    sSC = eval_dataset["sSC"]["test"].map(get_evaluator(speechlm, speechlm_tokenizer), **map_kwargs)
+    generation = eval_dataset["generation"]["train"].map(
+        get_generation_evaluator(
+            encoder,
+            speechlm,
+            speechlm_tokenizer,
+            decoder,
+            pipe,
+            textlm,
+            textlm_tokenizer,
+            nltk_word_tokenizer,
+        )
+    )
 
-    def is_in_vocab(example):
-        return example["frequency"] != 0
-
-    def is_out_of_vocab(example):
-        return example["frequency"] == 0
-
-    pd.DataFrame(
-        [
-            np.mean(sWUGGY["metrics"]),
-            np.mean(sWUGGY.filter(is_in_vocab)["metrics"]),
-            np.mean(sWUGGY.filter(is_out_of_vocab)["metrics"]),
-            np.mean(sBLIMP["metrics"]),
-            np.mean(tSC["metrics"]),
-            np.mean(sSC["metrics"]),
-        ],
-        index=["sWUGGY", "sWUGGY IV", "sWUGGY OOV", "sBLIMP", "tSC", "sSC"],
-    ).to_csv(Path(config.training_args.output_dir) / f"score_test_{global_step}.csv")
+    # 4. save results
+    results = {
+        "sWUGGY": np.mean(sWUGGY["metrics"]),
+        "sBLIMP": np.mean(sBLIMP["metrics"]),
+        "tSC": np.mean(tSC["metrics"]),
+        "sSC": np.mean(sSC["metrics"]),
+        "perplexity": np.float64(generation["nll"].mean().exp().item()),
+        "auto-bleu": np.float64(generation["auto-bleu"].mean().item()),
+    }
+    pd.DataFrame.from_dict(results, orient="index").to_csv(Path(config.training_args.output_dir) / "score_test.csv")

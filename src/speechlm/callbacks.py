@@ -58,21 +58,13 @@ class EvaluationCallback(TrainerCallback):
             self.get_evaluator(model, processing_class), **map_kwargs
         )
 
-        def is_in_vocab(example):
-            return example["frequency"] != 0
-
-        def is_out_of_vocab(example):
-            return example["frequency"] == 0
-
-        pd.DataFrame(
-            [
-                np.mean(sWUGGY["metrics"]),
-                np.mean(sWUGGY.filter(is_in_vocab)["metrics"]),
-                np.mean(sWUGGY.filter(is_out_of_vocab)["metrics"]),
-                np.mean(sBLIMP["metrics"]),
-            ],
-            index=["sWUGGY", "sWUGGY IV", "sWUGGY OOV", "sBLIMP"],
-        ).to_csv(Path(args.output_dir) / f"score_dev_{state.global_step}.csv")
+        results = {
+            "sWUGGY": np.mean(sWUGGY["metrics"]),
+            "sBLIMP": np.mean(sBLIMP["metrics"]),
+        }
+        pd.DataFrame.from_dict(results, orient="index").to_csv(
+            Path(args.output_dir) / f"score_dev_{state.global_step}.csv"
+        )
 
         model.train()
 
@@ -89,20 +81,12 @@ class EvaluationCallback(TrainerCallback):
         tSC = self.eval_dataset["tSC"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
         sSC = self.eval_dataset["sSC"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
 
-        def is_in_vocab(example):
-            return example["frequency"] != 0
-
-        def is_out_of_vocab(example):
-            return example["frequency"] == 0
-
-        pd.DataFrame(
-            [
-                np.mean(sWUGGY["metrics"]),
-                np.mean(sWUGGY.filter(is_in_vocab)["metrics"]),
-                np.mean(sWUGGY.filter(is_out_of_vocab)["metrics"]),
-                np.mean(sBLIMP["metrics"]),
-                np.mean(tSC["metrics"]),
-                np.mean(sSC["metrics"]),
-            ],
-            index=["sWUGGY", "sWUGGY IV", "sWUGGY OOV", "sBLIMP", "tSC", "sSC"],
-        ).to_csv(Path(args.output_dir) / f"score_test_{state.global_step}.csv")
+        results = {
+            "sWUGGY": np.mean(sWUGGY["metrics"]),
+            "sBLIMP": np.mean(sBLIMP["metrics"]),
+            "tSC": np.mean(tSC["metrics"]),
+            "sSC": np.mean(sSC["metrics"]),
+        }
+        pd.DataFrame.from_dict(results, orient="index").to_csv(
+            Path(args.output_dir) / f"score_test_{state.global_step}.csv"
+        )

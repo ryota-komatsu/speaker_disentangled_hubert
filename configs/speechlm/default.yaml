@@ -5,6 +5,7 @@ dataset:
   APP_DIR: "data/zr-data"
   tSC_DIR: "data/tSC"
   sSC_DIR: "data/sSC"
+  eval_dir: "data/LibriSpeech/test-clean"
 
 model_args:
   name: ""
@@ -40,3 +41,12 @@ training_args:
 speech2unit:
   model_name_or_path: "ryota-komatsu/s5-hubert"
   vocab_size: 16384
+
+unit2speech:
+  model_name_or_path: "ryota-komatsu/s5-hubert-decoder-ft"
+
+asr:
+  model_name_or_path: "openai/whisper-large-v3"
+
+textlm:
+  model_name_or_path: "allenai/OLMo-2-0425-1B"

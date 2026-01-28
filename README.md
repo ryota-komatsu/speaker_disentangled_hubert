@@ -14,7 +14,7 @@ This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syll
 ```shell
 sudo apt install git-lfs  # for UTMOS
 
-conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10.18 pip=24.0 faiss-gpu=1.12.0
+conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10.19 pip=24.0 faiss-gpu=1.12.0
 conda activate py310
 pip install -r requirements/requirements.txt
 
