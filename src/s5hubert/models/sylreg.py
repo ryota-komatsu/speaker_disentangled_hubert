@@ -9,7 +9,9 @@ from ..utils.misc import fix_random_seed
 
 
 class SylRegForSyllableDiscovery(PreTrainedModel):
+    config_class = HubertConfig
     base_model_prefix = "model"
+    main_input_name = "input_values"
 
     def __init__(
         self,

@@ -6,7 +6,7 @@ import jiwer
 import pandas as pd
 import torch
 from datasets import load_dataset
-from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, HubertModel, pipeline
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
 from ..s5hubert import S5HubertForSyllableDiscovery
 from .models import FlowMatchingWithBigVGan
@@ -17,7 +17,7 @@ warnings.simplefilter("ignore", DeprecationWarning)
 from ..utmos.score import Score
 
 sys.path.append("src/textlesslib")
-from src.textlesslib.textless import dispatch_quantizer
+from src.textlesslib.textless.data.speech_encoder import SpeechEncoder
 from src.textlesslib.textless.vocoders.hifigan.vocoder import CodeHiFiGANVocoder
 
 
@@ -43,8 +43,12 @@ def get_eval_fn(encoder, decoder, processor, pipe, scorer, data_dir):
         example["transcript"] = processor.tokenizer.normalize(transcript)
 
         ref_wav = example["audio"]["array"].unsqueeze(0).to(encoder.device)
-        hyp_wav = decoder(encoder(ref_wav)[0]["units"].unsqueeze(0)).waveform
+        units = encoder(ref_wav)[0]["units"].unsqueeze(0)
+        hyp_wav = decoder(units).waveform
+        # units = encoder(ref_wav)["units"].unsqueeze(0)
+        # hyp_wav = decoder(units, dur_prediction=True)
 
+        # ASR
         ref = pipe(ref_wav.cpu().squeeze(0).numpy(), generate_kwargs={"language": "english"}, return_timestamps=True)
         hyp = pipe(hyp_wav.cpu().squeeze(0).numpy(), generate_kwargs={"language": "english"}, return_timestamps=True)
 
@@ -52,6 +56,9 @@ def get_eval_fn(encoder, decoder, processor, pipe, scorer, data_dir):
         example["hyp"] = processor.tokenizer.normalize(hyp["text"])
         example["mos_ref"] = scorer.score(ref_wav)
         example["mos_hyp"] = scorer.score(hyp_wav)
+
+        example["seq_len"] = units.shape[1]
+        example["duration"] = len(example["audio"]["array"]) / example["audio"]["sampling_rate"]
 
         return example
 
@@ -63,9 +70,15 @@ def evaluate(config):
     encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
     decoder = FlowMatchingWithBigVGan.from_pretrained(config.unit2speech.model_name_or_path, device_map="cuda")
 
-    # model = HubertModel.from_pretrained("slprl/mhubert-base-25hz", num_hidden_layers=11, device_map="cuda")
-    # quantizer = dispatch_quantizer("mhubert-base-25hz", "kmeans", 500)
-    # vocoder = CodeHiFiGANVocoder.by_name(
+    # encoder = SpeechEncoder.by_name(
+    #     dense_model_name="mhubert-base-25hz",
+    #     quantizer_model_name="kmeans",
+    #     vocab_size=500,
+    #     deduplicate=True,
+    #     need_f0=False,
+    #     add_bos_eos=False,
+    # ).cuda()
+    # decoder = CodeHiFiGANVocoder.by_name(
     #     dense_model_name="mhubert-base-25hz",
     #     quantizer_model_name="kmeans",
     #     vocab_size=500,
@@ -105,8 +118,16 @@ def evaluate(config):
     cer_ref = jiwer.cer(dataset["transcript"], dataset["ref"]) * 100
     mos_ref = torch.mean(dataset["mos_ref"]).item()
 
+    framerate = sum(dataset["seq_len"]) / sum(dataset["duration"])
+
     Path(config.path.result).parent.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame(
-        [wer_hyp, cer_hyp, mos_hyp, wer_ref, cer_ref, mos_ref],
-        index=["WER (hyp)", "CER (hyp)", "MOS (hyp)", "WER (ref)", "CER (ref)", "MOS (ref)"],
-    ).to_csv(config.path.result, float_format="%.2f")
+    results = {
+        "WER (hyp)": wer_hyp,
+        "CER (hyp)": cer_hyp,
+        "MOS (hyp)": mos_hyp,
+        "WER (ref)": wer_ref,
+        "CER (ref)": cer_ref,
+        "MOS (ref)": mos_ref,
+        "framerate": framerate,
+    }
+    pd.DataFrame.from_dict(results, orient="index").to_csv(config.path.result, float_format="%.2f")
