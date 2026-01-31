@@ -2,7 +2,6 @@ import glob
 import json
 import os
 import re
-import sqlite3
 from pathlib import Path
 from typing import Any, Dict
 
@@ -220,63 +219,46 @@ def align_text(config, shard_index: int = 0):
         json.dump(id_to_aligned_text, f)
 
 
-def align_units(config, num_shards_text: int = 1, num_shards_units: int = 1):
-    id_to_aligned_text = dict()
-
-    for shard_index in tqdm(range(num_shards_text)):
-        with open(f"data/id_to_aligned_text{shard_index}.json") as f:
-            id_to_aligned_text.update(json.load(f))
-
-    def add_aligned_units(example: Dict[str, Any]) -> Dict[str, Any]:
-        example["aligned_text"] = id_to_aligned_text.get(example["id"], [])
-
-        if not example["aligned_text"]:
-            example["aligned_units"] = []
-            return example
-
-        unit_timestamps = np.cumsum(example["durations"]) * 0.02
-        word_timestamps = sorted(
-            {item["start_time"] for item in example["aligned_text"]}
-            | {item["end_time"] for item in example["aligned_text"]}
-        )
-        aligned_timestamps = sorted(
-            set(unit_timestamps) & set(word_timestamps) | set([max(unit_timestamps[-1], word_timestamps[-1])])
-        )
-
-        aligned_units = []
-        start_time = 0
-
-        for end_time in aligned_timestamps:
-            units = [
-                unit
-                for unit, unit_end_time in zip(example["units"], unit_timestamps)
-                if start_time < unit_end_time <= end_time
-            ]
-            text = "".join(
-                item["word"]
-                for item in example["aligned_text"]
-                if start_time <= item["start_time"] and item["end_time"] <= end_time
-            )
-
-            aligned_units.append({"start_time": start_time, "end_time": end_time, "units": units, "text": text})
-            start_time = end_time
-
-        example["aligned_units"] = aligned_units
-
+def add_aligned_units(example: Dict[str, Any]) -> Dict[str, Any]:
+    if not example["aligned_text"]:
+        example["aligned_units"] = []
         return example
 
-    for shard_index in range(num_shards_units):
-        data_files = [f"{config.dataset.manifest_prefix}{shard_index}.json"]
-        dataset = load_dataset("json", data_files=data_files, split="train")
+    unit_timestamps = np.cumsum(example["durations"]) * 0.02
+    word_timestamps = sorted(
+        {item["start_time"] for item in example["aligned_text"]}
+        | {item["end_time"] for item in example["aligned_text"]}
+    )
+    aligned_timestamps = sorted(
+        set(unit_timestamps) & set(word_timestamps) | set([max(unit_timestamps[-1], word_timestamps[-1])])
+    )
 
-        with open(f"{config.dataset.manifest_prefix}_with_alignment{shard_index}.json", "w") as f:
-            for example in tqdm(dataset):
-                example = add_aligned_units(example)
-                json.dump(example, f)
-                f.write("\n")
+    aligned_units = []
+    start_time = 0
 
+    for end_time in aligned_timestamps:
+        units = [
+            unit
+            for unit, unit_end_time in zip(example["units"], unit_timestamps)
+            if start_time < unit_end_time <= end_time
+        ]
+        text = "".join(
+            item["word"]
+            for item in example["aligned_text"]
+            if start_time <= item["start_time"] and item["end_time"] <= end_time
+        )
+
+        aligned_units.append({"start_time": start_time, "end_time": end_time, "units": units, "text": text})
+        start_time = end_time
+
+    example["aligned_units"] = aligned_units
+
+    return example
+
+
+def align_units(config, num_shards: int = 1):
     data_files = [
-        f"{config.dataset.manifest_prefix}_with_alignment{shard_index}.json" for shard_index in range(num_shards_units)
+        f"{config.dataset.manifest_prefix}_with_alignment{shard_index}.json" for shard_index in range(num_shards)
     ]
     dataset = load_dataset("json", data_files=data_files, split="train")
     dataset = DatasetDict({"train": dataset})

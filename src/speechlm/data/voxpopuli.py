@@ -34,12 +34,11 @@ def tokenize_voxpopuli(
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                "audio_filepath": audio_filepath,
-                "text": example["normalized_text"],
+                # "audio_filepath": audio_filepath,
+                # "text": example["normalized_text"],
                 "id": example["audio_id"],
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "intermediate_units": outputs[0]["intermediate_units"].tolist(),
             }
             json.dump(example, f)
             f.write("\n")

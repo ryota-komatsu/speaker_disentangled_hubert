@@ -159,7 +159,6 @@ def tokenize_librilight_(
                     "id": id_,
                     "units": outputs[0]["units"].tolist(),
                     "durations": outputs[0]["durations"].tolist(),
-                    "intermediate_units": outputs[0]["intermediate_units"].tolist(),
                 }
                 json.dump(example, f)
                 f.write("\n")
@@ -201,12 +200,11 @@ def tokenize_librilight(
             text = normalize_text(text)
 
             example = {
-                "audio_filepath": save_path,
-                "text": text,
+                # "audio_filepath": save_path,
+                # "text": text,
                 "id": example["id"],
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "intermediate_units": outputs[0]["intermediate_units"].tolist(),
             }
             json.dump(example, f)
             f.write("\n")

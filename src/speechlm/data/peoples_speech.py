@@ -38,12 +38,11 @@ def tokenize_clean(
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                "audio_filepath": audio_filepath,
-                "text": example["text"],
+                # "audio_filepath": audio_filepath,
+                # "text": example["text"],
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "intermediate_units": outputs[0]["intermediate_units"].tolist(),
             }
             json.dump(example, f)
             f.write("\n")
@@ -76,12 +75,11 @@ def tokenize_clean_sa(
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                "audio_filepath": audio_filepath,
-                "text": example["text"],
+                # "audio_filepath": audio_filepath,
+                # "text": example["text"],
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "intermediate_units": outputs[0]["intermediate_units"].tolist(),
             }
             json.dump(example, f)
             f.write("\n")
