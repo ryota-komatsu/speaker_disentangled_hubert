@@ -122,6 +122,7 @@ def mincut_torch(
     merge_threshold: Optional[float] = 0.7,
     min_duration: int = 3,
     max_duration: int = 35,
+    norm: bool = False,
 ) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[torch.Tensor]]:
     """
     A computationally efficient PyTorch implementation of the exact minimum cut algorithm
@@ -171,6 +172,8 @@ def mincut_torch(
         boundaries = torch.tensor(seg_boundary_frame_pairs, device=hidden_states.device) * sec_per_frame
         frame_boundaries = torch.tensor(seg_boundary_frame_pairs, device=hidden_states.device)
 
+        if norm:
+            pooled_feat = (pooled_feat - pooled_feat.mean(dim=1, keepdim=True)) / pooled_feat.std(dim=1, keepdim=True)
         batch_boundaries.append(boundaries)
         batch_pooled_feat.append(pooled_feat)
         batch_frame_boundaries.append(frame_boundaries)

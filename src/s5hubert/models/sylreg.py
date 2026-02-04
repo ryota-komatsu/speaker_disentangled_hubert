@@ -110,6 +110,7 @@ class SylRegForSyllableDiscovery(PreTrainedModel):
             merge_threshold=self.merge_threshold,
             min_duration=self.min_duration,
             max_duration=self.max_duration,
+            norm=True,
         )
 
         for dense, length, segments, segment_features, frame_boundary in zip(

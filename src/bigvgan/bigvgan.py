@@ -67,8 +67,6 @@ class AMPBlock1(torch.nn.Module):
         channels: int,
         kernel_size: int = 3,
         dilation: tuple = (1, 3, 5),
-        activation: str = None,
-        use_cuda_kernel: bool = False,
     ):
         super().__init__()
 
@@ -106,33 +104,10 @@ class AMPBlock1(torch.nn.Module):
 
         self.num_layers = len(self.convs1) + len(self.convs2)  # Total number of conv layers
 
-        # Select which Activation1d, lazy-load cuda version to ensure backward compatibility
-        if use_cuda_kernel:
-            from .alias_free_activation.cuda.activation1d import Activation1d as CudaActivation1d
-
-            Activation1d = CudaActivation1d
-        else:
-            Activation1d = TorchActivation1d
-
         # Activation functions
-        if activation == "snake":
-            self.activations = nn.ModuleList(
-                [
-                    Activation1d(activation=activations.Snake(channels, alpha_logscale=config.snake_logscale))
-                    for _ in range(self.num_layers)
-                ]
-            )
-        elif activation == "snakebeta":
-            self.activations = nn.ModuleList(
-                [
-                    Activation1d(activation=activations.SnakeBeta(channels, alpha_logscale=config.snake_logscale))
-                    for _ in range(self.num_layers)
-                ]
-            )
-        else:
-            raise NotImplementedError(
-                "activation incorrectly specified. check the config file and look for 'activation'."
-            )
+        self.activations = nn.ModuleList(
+            [TorchActivation1d(activation=activations.SnakeBeta(channels)) for _ in range(self.num_layers)]
+        )
 
     def forward(self, x):
         acts1, acts2 = self.activations[::2], self.activations[1::2]
@@ -165,26 +140,16 @@ class BigVGan(PreTrainedModel):
 
     Args:
         h (AttrDict): Hyperparameters.
-        use_cuda_kernel (bool): If set to True, loads optimized CUDA kernels for AMP. This should be used for inference only, as training is not supported with CUDA kernels.
 
     Note:
-        - The `use_cuda_kernel` parameter should be used for inference only, as training with CUDA kernels is not supported.
         - Ensure that the activation function is correctly specified in the hyperparameters (config.activation).
     """
 
     config_class = BigVGanConfig
 
-    def __init__(self, config: BigVGanConfig, use_cuda_kernel: bool = False):
+    def __init__(self, config: BigVGanConfig):
         super().__init__(config)
         self.config = config
-
-        # Select which Activation1d, lazy-load cuda version to ensure backward compatibility
-        if use_cuda_kernel:
-            from .alias_free_activation.cuda.activation1d import Activation1d as CudaActivation1d
-
-            Activation1d = CudaActivation1d
-        else:
-            Activation1d = TorchActivation1d
 
         self.num_kernels = len(config.resblock_kernel_sizes)
         self.num_upsamples = len(config.upsample_rates)
@@ -214,38 +179,16 @@ class BigVGan(PreTrainedModel):
         for i in range(len(self.ups)):
             ch = config.upsample_initial_channel // (2 ** (i + 1))
             for j, (k, d) in enumerate(zip(config.resblock_kernel_sizes, config.resblock_dilation_sizes)):
-                self.resblocks.append(
-                    AMPBlock1(config, ch, k, d, activation=config.activation, use_cuda_kernel=use_cuda_kernel)
-                )
+                self.resblocks.append(AMPBlock1(config, ch, k, d))
 
         # Post-conv
-        activation_post = (
-            activations.Snake(ch, alpha_logscale=config.snake_logscale)
-            if config.activation == "snake"
-            else (
-                activations.SnakeBeta(ch, alpha_logscale=config.snake_logscale)
-                if config.activation == "snakebeta"
-                else None
-            )
-        )
-        if activation_post is None:
-            raise NotImplementedError(
-                "activation incorrectly specified. check the config file and look for 'activation'."
-            )
-
-        self.activation_post = Activation1d(activation=activation_post)
-
-        # Whether to use bias for the final conv_post. Default to True for backward compatibility
-        self.use_bias_at_final = config.use_bias_at_final
-        self.conv_post = Conv1d(ch, 1, 7, 1, padding=3, bias=self.use_bias_at_final)
+        self.activation_post = TorchActivation1d(activation=activations.SnakeBeta(ch))
+        self.conv_post = Conv1d(ch, 1, 7, 1, padding=3, bias=False)
 
         # Weight initialization
         for i in range(len(self.ups)):
             self.ups[i].apply(init_weights)
         self.conv_post.apply(init_weights)
-
-        # Final tanh activation. Defaults to True for backward compatibility
-        self.use_tanh_at_final = config.use_tanh_at_final
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -277,11 +220,7 @@ class BigVGan(PreTrainedModel):
         # Post-conv
         x = self.activation_post(x)
         x = self.conv_post(x)
-        # Final tanh activation
-        if self.use_tanh_at_final:
-            x = torch.tanh(x)
-        else:
-            x = torch.clamp(x, min=-1.0, max=1.0)  # Bound the output to [-1, 1]
+        x = torch.clamp(x, min=-1.0, max=1.0)  # Bound the output to [-1, 1]
 
         return x.squeeze(1)
 

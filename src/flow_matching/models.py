@@ -279,17 +279,16 @@ class FlowMatchingModel(PreTrainedModel):
 class FlowMatchingWithBigVGan(PreTrainedModel):
     config_class = FlowMatchingWithBigVGanConfig
 
-    def __init__(self, config: FlowMatchingWithBigVGanConfig, use_cuda_kernel: bool = False):
+    def __init__(self, config: FlowMatchingWithBigVGanConfig):
         super().__init__(config)
         self.model = FlowMatchingModel(config.model_config)
-        self.vocoder = BigVGan(config.vocoder_config, use_cuda_kernel=use_cuda_kernel)
+        self.vocoder = BigVGan(config.vocoder_config)
 
     @classmethod
     def load_pretrained(
         cls,
         model_path,
         vocoder_path,
-        use_cuda_kernel: bool = False,
     ) -> "FlowMatchingWithBigVGan":
         model_config = FlowMatchingConfig.from_pretrained(model_path)
         vocoder_config = BigVGanConfig.from_pretrained(vocoder_path)
@@ -297,7 +296,7 @@ class FlowMatchingWithBigVGan(PreTrainedModel):
 
         model = cls(config)
         model.model = FlowMatchingModel.from_pretrained(model_path)
-        model.vocoder = BigVGan.from_pretrained(vocoder_path, use_cuda_kernel=use_cuda_kernel)
+        model.vocoder = BigVGan.from_pretrained(vocoder_path)
         return model
 
     @torch.inference_mode()

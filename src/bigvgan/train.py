@@ -42,10 +42,6 @@ def train(rank, config):
             upsample_kernel_sizes=list(config.vocoder.upsample_kernel_sizes),
             resblock_kernel_sizes=list(config.vocoder.resblock_kernel_sizes),
             resblock_dilation_sizes=[list(sizes) for sizes in config.vocoder.resblock_dilation_sizes],
-            use_tanh_at_final=config.vocoder.use_tanh_at_final,
-            use_bias_at_final=config.vocoder.use_bias_at_final,
-            activation=config.vocoder.activation,
-            snake_logscale=config.vocoder.snake_logscale,
         )
     ).to(device)
     mpd = MultiPeriodDiscriminator(config.vocoder).to(device)
