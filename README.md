@@ -1,7 +1,7 @@
 # S5-HuBERT: Self-Supervised Speaker-Separated Syllable HuBERT
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org)
+[![Python](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org)
 [![colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ryota-komatsu/speaker_disentangled_hubert/blob/main/demo.ipynb)
 [![arXiv](https://img.shields.io/badge/arXiv-2409.10103-<COLOR>.svg?logo=arXiv)](https://arxiv.org/abs/2409.10103)
 [![model](https://img.shields.io/badge/%F0%9F%A4%97-Model-blue)](https://huggingface.co/collections/ryota-komatsu/speaker-disentangled-hubert-686dc45a8718d505aa696f76)
@@ -14,9 +14,10 @@ This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syll
 ```shell
 sudo apt install git-lfs  # for UTMOS
 
-conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10.19 pip=24.0 faiss-gpu=1.12.0
-conda activate py310
+conda create -y -n py312 -c pytorch -c nvidia -c conda-forge python=3.12 pip=24.0 faiss-gpu=1.13.2 ffmpeg
+conda activate py312
 pip install -r requirements/requirements.txt
+pip install torchcodec==0.10  # CPU-only
 
 sh scripts/setup.sh
 ```
@@ -110,7 +111,7 @@ dataset.root in a config file
 ## Syllable discovery
 
 ```shell
-tmux new -s py310
+tmux new -s py312
 accelerate launch \
   --config_file=configs/speech2unit/ddp.yaml \
   --main_process_ip= \
@@ -118,7 +119,7 @@ accelerate launch \
   main_speech2unit.py train
 Ctrl + b
 d  # detach
-tmux a -t py310  # attach
+tmux a -t py312  # attach
 ```
 
 To run only a sub-task (train, syllable_segmentation, quantize, or evaluate), specify it as an argument.

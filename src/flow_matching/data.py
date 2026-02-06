@@ -5,15 +5,40 @@ from typing import Any, Dict
 
 import librosa
 import torch
-from datasets import Array2D, Audio, Features, Sequence, Value, load_dataset
+from datasets import Array2D, Audio, Features, List, Value, load_dataset
 from torch.nn.utils.rnn import pad_sequence
 
 from ..bigvgan.data import mel_spectrogram
 from ..s5hubert import S5HubertForSyllableDiscovery
 
 
+def truncate(example: Dict[str, Any], max_frames: int = 512) -> Dict[str, Any]:
+    if example["spectrogram"].shape[0] < max_frames:
+        return example
+
+    cumsum = torch.cumsum(example["durations"], dim=0)
+    cumsum = torch.cat([torch.zeros(1, dtype=cumsum.dtype, device=cumsum.device), cumsum])
+
+    # cumsum[-1] - cumsum[i] <= max_frames
+    max_start = torch.searchsorted(cumsum, example["spectrogram"].shape[0] - max_frames)
+    start = torch.randint(0, max_start, (1,)) if max_start > 0 else 0
+    # max_frames <= cumsum[i] - cumsum[start]
+    end = torch.searchsorted(cumsum, cumsum[start] + max_frames) - 1
+
+    start_frame = cumsum[start]
+    end_frame = cumsum[end]
+
+    return {
+        "units": example["units"][start:end],
+        "spectrogram": example["spectrogram"][start_frame:end_frame],
+        "durations": example["durations"][start:end],
+    }
+
+
 def get_collate_fn(pad_token_id: int = 16384):
     def collate_fn(batch) -> Dict[str, Any]:
+        batch = [truncate(item) for item in batch]
+
         input_ids = [item["units"] for item in batch]
         spectrogram_labels = [item["spectrogram"] for item in batch]
         duration_labels = [item["durations"] for item in batch]
@@ -38,8 +63,8 @@ def tokenize(config):
         {
             "audio": Audio(sampling_rate=16000),
             "id": Value("string"),
-            "units": Sequence(Value("int32")),
-            "durations": Sequence(Value("int32")),
+            "units": List(Value("int32")),
+            "durations": List(Value("int32")),
             "transcript": Value("string"),
             "spectrogram": Array2D(shape=(None, 80), dtype="float32"),
         }

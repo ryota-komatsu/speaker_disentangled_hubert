@@ -27,9 +27,10 @@ import re
 from pathlib import Path
 
 import torchaudio
-from datasets import load_dataset
+from datasets import Array2D, Features, List, Value, load_dataset
 from tqdm import tqdm
 
+from ..bigvgan.data import mel_spectrogram
 from ..s5hubert import S5HubertForSyllableDiscovery
 
 out_emilia = {
@@ -165,7 +166,6 @@ def tokenize_emilia(
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "intermediate_units": outputs[0]["intermediate_units"].tolist(),
             }
             json.dump(example, f)
             f.write("\n")
@@ -218,7 +218,51 @@ def tokenize_yodas(
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "intermediate_units": outputs[0]["intermediate_units"].tolist(),
             }
             json.dump(example, f)
             f.write("\n")
+
+
+def get_tokenize_fn(data_dir):
+    data_dir = Path(data_dir).resolve()
+
+    def _add_spectrogram(example):
+        audio_filepath = str((data_dir / example["id"]).with_suffix(".flac"))
+        input_values, sr = torchaudio.load(audio_filepath)
+        input_values = input_values.cuda()
+        input_values = input_values / input_values.abs().max() * 0.95
+        input_values = input_values.unsqueeze(0)
+
+        spectrogram_labels = mel_spectrogram(input_values).squeeze(0)  # (80, len)
+        spectrogram_labels = spectrogram_labels.transpose(0, 1)  # (len, 80)
+        spectrogram_labels = spectrogram_labels.cpu().tolist()
+
+        return {"spectrogram": spectrogram_labels}
+
+    return _add_spectrogram
+
+
+def add_spectrogram(
+    dataset_name: str,
+    dataset_path: str,
+    num_proc: int = 16,
+    config_name: str = "emilia",
+    data_dir: str = "data/emilia",
+):
+    features = Features(
+        {
+            "id": Value("string"),
+            "units": List(Value("int32")),
+            "durations": List(Value("int32")),
+            "spectrogram": Array2D(shape=(None, 80), dtype="float32"),
+        }
+    )
+
+    dataset = load_dataset(dataset_name, config_name, split="train")
+    dataset = dataset.map(
+        get_tokenize_fn(data_dir),
+        num_proc=num_proc,
+        remove_columns=["intermediate_units"],
+    )
+    dataset = dataset.cast(features, num_proc=num_proc)
+    dataset.save_to_disk(dataset_path)
