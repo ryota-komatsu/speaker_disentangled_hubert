@@ -94,8 +94,8 @@ class DiTLayer(nn.Module):
         super().__init__()
         self.self_attn = Attention(config)
         self.mlp = MLP(config)
-        self.input_layernorm = AdaptiveRMSNorm(config.hidden_size)
-        self.post_attention_layernorm = AdaptiveRMSNorm(config.hidden_size)
+        self.input_layernorm = AdaptiveRMSNorm(config.hidden_size, config.rms_norm_eps)
+        self.post_attention_layernorm = AdaptiveRMSNorm(config.hidden_size, config.rms_norm_eps)
 
     def forward(
         self,

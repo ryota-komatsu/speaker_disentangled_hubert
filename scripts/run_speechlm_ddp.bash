@@ -18,7 +18,7 @@ module load miniconda
 main_process_ip=$(head -n 1 $PE_HOSTFILE | awk '{print $1}')
 
 eval "$(/apps/t4/rhel9/free/miniconda/24.1.2/bin/conda shell.bash hook)"
-conda activate py312
+conda activate t4
 accelerate launch \
     --config_file=${config_file} \
     --main_process_ip=${main_process_ip} \

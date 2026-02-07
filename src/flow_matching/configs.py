@@ -23,6 +23,7 @@ class FlowMatchingConfig(PretrainedConfig):
         max_position_embeddings=None,
         dt: float = 0.1,
         cfg_strength: float = 0.7,
+        rms_norm_eps: float = 1e-6,
         **kwargs,
     ):
         self.vocab_size = vocab_size
@@ -40,6 +41,7 @@ class FlowMatchingConfig(PretrainedConfig):
         self.max_position_embeddings = max_position_embeddings
         self.dt = dt
         self.cfg_strength = cfg_strength
+        self.rms_norm_eps = rms_norm_eps
         super().__init__(**kwargs)
 
 

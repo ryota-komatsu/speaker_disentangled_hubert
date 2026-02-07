@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 import librosa
 import torch
-from datasets import Array2D, Audio, Features, List, Value, load_dataset
+from datasets import Array2D, Audio, Features, Sequence, Value, load_dataset
 from torch.nn.utils.rnn import pad_sequence
 
 from ..bigvgan.data import mel_spectrogram
@@ -63,8 +63,8 @@ def tokenize(config):
         {
             "audio": Audio(sampling_rate=16000),
             "id": Value("string"),
-            "units": List(Value("int32")),
-            "durations": List(Value("int32")),
+            "units": Sequence(Value("int32")),
+            "durations": Sequence(Value("int32")),
             "transcript": Value("string"),
             "spectrogram": Array2D(shape=(None, 80), dtype="float32"),
         }

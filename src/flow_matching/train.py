@@ -89,7 +89,7 @@ class EvaluationCallback(TrainerCallback):
 def train_dit(config):
     libritts = load_dataset(config.dataset.name, "LibriTTS-R", split="train", keep_in_memory=True)
     emilia = load_dataset(config.dataset.name, "emilia", split="train", keep_in_memory=True)
-    yodas = load_dataset(config.dataset.name, "yodas", split="train")
+    yodas = load_dataset(config.dataset.name, "emilia_yodas", split="train")
     train_dataset = concatenate_datasets([libritts, emilia, yodas])
     # eval_dataset = load_dataset(config.dataset.name, "LibriTTS-R", split="dev", keep_in_memory=True)
 

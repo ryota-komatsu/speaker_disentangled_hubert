@@ -57,6 +57,17 @@ class TaskRunner:
 
         tokenize_clean_sa(data_dir, model_name_or_path)
 
+    def tokenize_tinystories(
+        self,
+        num_shards: int = 1,
+        shard_index: int = 0,
+        data_dir: str = "data/tinystories",
+        model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    ):
+        from src.speechlm.data.tinystories import tokenize_tinystories
+
+        tokenize_tinystories(num_shards, shard_index, data_dir, model_name_or_path)
+
     def tokenize_voxpopuli(
         self,
         data_dir: str = "data/voxpopuli",

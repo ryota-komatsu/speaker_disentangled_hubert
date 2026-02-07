@@ -27,7 +27,7 @@ import re
 from pathlib import Path
 
 import torchaudio
-from datasets import Array2D, Features, List, Value, load_dataset
+from datasets import Array2D, Features, Sequence, Value, load_dataset
 from tqdm import tqdm
 
 from ..bigvgan.data import mel_spectrogram
@@ -252,8 +252,8 @@ def add_spectrogram(
     features = Features(
         {
             "id": Value("string"),
-            "units": List(Value("int32")),
-            "durations": List(Value("int32")),
+            "units": Sequence(Value("int32")),
+            "durations": Sequence(Value("int32")),
             "spectrogram": Array2D(shape=(None, 80), dtype="float32"),
         }
     )

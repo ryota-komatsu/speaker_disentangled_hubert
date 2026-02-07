@@ -33,6 +33,6 @@ mpirun \
     -x LD_LIBRARY_PATH \
     bash -c '
     eval "$(/apps/t4/rhel9/free/miniconda/24.1.2/bin/conda shell.bash hook)"
-    conda activate py312
+    conda activate t4
     python main_speechlm.py train --config='"${config}"'
 '
