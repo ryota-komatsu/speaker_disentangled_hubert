@@ -37,10 +37,13 @@ from ..bigvgan.bigvgan import BigVGan, BigVGanConfig
 from ..bigvgan.data import dynamic_range_compression_torch
 from .configs import FlowMatchingConfig, FlowMatchingWithBigVGanConfig
 from .modules.fastspeech import MLP, FlowMatchingDurationPredictor
-from .modules.norm import AdaptiveRMSNorm
 
 
 class Attention(nn.Module):
+    """
+    https://arxiv.org/abs/2302.05442
+    """
+
     def __init__(self, config):
         super().__init__()
         self.head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
@@ -51,6 +54,9 @@ class Attention(nn.Module):
         self.v_proj = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
         self.o_proj = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
 
+        self.q_norm = nn.RMSNorm(self.head_dim, elementwise_affine=False)
+        self.k_norm = nn.RMSNorm(self.head_dim, elementwise_affine=False)
+
     def forward(
         self,
         hidden_states: torch.FloatTensor,
@@ -60,8 +66,8 @@ class Attention(nn.Module):
         input_shape = hidden_states.shape[:-1]
         hidden_shape = (*input_shape, -1, self.head_dim)
 
-        query_states = self.q_proj(hidden_states).view(hidden_shape).transpose(1, 2)
-        key_states = self.k_proj(hidden_states).view(hidden_shape).transpose(1, 2)
+        query_states = self.q_norm(self.q_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
+        key_states = self.k_norm(self.k_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
         value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(1, 2)
 
         cos, sin = position_embeddings
@@ -89,13 +95,39 @@ class Attention(nn.Module):
         return self.o_proj(attn_output)
 
 
+class AdaLNZero(nn.Module):
+    """
+    https://arxiv.org/abs/2212.09748
+    """
+
+    def __init__(self, hidden_size: int):
+        super().__init__()
+        self.linear = nn.Linear(hidden_size, hidden_size * 6, bias=False)
+        nn.init.zeros_(self.linear.weight)
+
+        self.norm = nn.LayerNorm(hidden_size, elementwise_affine=False)
+
+    def forward(self, hidden_states: torch.FloatTensor, time_embeddings: torch.FloatTensor) -> torch.FloatTensor:
+        """
+        Args:
+            hidden_states (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+                hidden states.
+            time_embeddings (`torch.FloatTensor` of shape `(batch_size, hidden_size)`):
+                condition for adaptive norm layers.
+        """
+        time_embeddings = time_embeddings.unsqueeze(1)
+        time_embeddings = self.linear(time_embeddings)
+        attn_scale, attn_shift, attn_gate, mlp_scale, mlp_shift, mlp_gate = torch.chunk(time_embeddings, 6, dim=2)
+        return self.norm(hidden_states) * (attn_scale + 1.0) + attn_shift, attn_gate, mlp_scale, mlp_shift, mlp_gate
+
+
 class DiTLayer(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.self_attn = Attention(config)
         self.mlp = MLP(config)
-        self.input_layernorm = AdaptiveRMSNorm(config.hidden_size, config.rms_norm_eps)
-        self.post_attention_layernorm = AdaptiveRMSNorm(config.hidden_size, config.rms_norm_eps)
+        self.input_layernorm = AdaLNZero(config.hidden_size)
+        self.post_attention_layernorm = nn.LayerNorm(config.hidden_size, elementwise_affine=False)
 
     def forward(
         self,
@@ -104,11 +136,11 @@ class DiTLayer(nn.Module):
         position_embeddings: tuple[torch.Tensor, torch.Tensor],
         time_embeddings: torch.FloatTensor,
     ):
-        attn_input = self.input_layernorm(hidden_states, time_embeddings)
-        hidden_states = self.self_attn(attn_input, position_embeddings, attention_mask) + hidden_states
+        attn_input, attn_gate, mlp_scale, mlp_shift, mlp_gate = self.input_layernorm(hidden_states, time_embeddings)
+        hidden_states = self.self_attn(attn_input, position_embeddings, attention_mask) * attn_gate + hidden_states
 
-        ff_input = self.post_attention_layernorm(hidden_states, time_embeddings)
-        hidden_states = self.mlp(ff_input, attention_mask) + hidden_states
+        mlp_input = self.post_attention_layernorm(hidden_states) * (mlp_scale + 1.0) + mlp_shift
+        hidden_states = self.mlp(mlp_input, attention_mask) * mlp_gate + hidden_states
         return hidden_states
 
 
@@ -173,6 +205,7 @@ class FlowMatchingModel(PreTrainedModel):
         timesteps = torch.rand((bsz,), device=self.device)
         t = timesteps.unsqueeze(1).unsqueeze(2)
         xt = (1 - t) * x0 + t * spectrogram_labels
+        xt = xt.masked_fill(~mask.unsqueeze(2), 0)
         ut = spectrogram_labels - x0
 
         # phoneme or semantic conditioning embedding

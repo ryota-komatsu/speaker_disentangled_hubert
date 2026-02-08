@@ -26,7 +26,7 @@ flow_matching:
     warmup_steps: 1000
     save_steps: 10000
     save_total_limit: 2
-    fp16: true
+    bf16: true
     eval_steps: 10000
     dataloader_num_workers: 16
     remove_unused_columns: false
@@ -45,7 +45,7 @@ flow_matching:
     max_grad_norm: 0.1
     max_steps: 50
     save_steps: 10
-    fp16: true
+    bf16: true
     remove_unused_columns: false
     optim: "adamw_torch_fused"
     ddp_find_unused_parameters: false
