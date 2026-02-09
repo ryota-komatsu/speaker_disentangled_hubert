@@ -13,6 +13,7 @@ class FlowMatchingConfig(PretrainedConfig):
         embedding_dim: int = 768,
         hidden_size: int = 512,
         num_hidden_layers: int = 4,
+        num_encoder_layers: int = 2,
         num_attention_heads: int = 2,
         intermediate_size: int = 768,
         attention_dropout: float = 0.0,
@@ -30,6 +31,7 @@ class FlowMatchingConfig(PretrainedConfig):
         self.embedding_dim = embedding_dim
         self.hidden_size = hidden_size
         self.num_hidden_layers = num_hidden_layers
+        self.num_encoder_layers = num_encoder_layers
         self.num_attention_heads = num_attention_heads
         self.intermediate_size = intermediate_size
         self.attention_dropout = attention_dropout
