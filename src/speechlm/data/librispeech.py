@@ -4,7 +4,7 @@ from pathlib import Path
 import torchaudio
 from tqdm import tqdm
 
-from ...s5hubert import S5HubertForSyllableDiscovery
+from ...s5hubert import SylRegForSyllableDiscovery
 
 
 def tokenize_librispeech(
@@ -13,7 +13,7 @@ def tokenize_librispeech(
 ):
     dataset = Path(data_dir).glob("train-*/**/*.flac")
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
 
     manifest_path = Path(data_dir) / "manifest.json"
     with open(manifest_path, "w") as f:

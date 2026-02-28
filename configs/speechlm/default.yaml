@@ -1,5 +1,5 @@
 dataset:
-  name: "ryota-komatsu/s5-hubert"
+  name: "ryota-komatsu/SylReg"
 
   HF_HOME: "~/.cache/huggingface"
   APP_DIR: "data/zr-data"
@@ -39,11 +39,11 @@ training_args:
   resume_from_checkpoint: null
 
 speech2unit:
-  model_name_or_path: "ryota-komatsu/s5-hubert"
-  vocab_size: 16384
+  model_name_or_path: "ryota-komatsu/SylReg-Distill"
+  vocab_size: 8192
 
 unit2speech:
-  model_name_or_path: "ryota-komatsu/s5-hubert-decoder-ft"
+  model_name_or_path: "ryota-komatsu/SylReg-Decoder"
 
 asr:
   model_name_or_path: "openai/whisper-large-v3"

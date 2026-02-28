@@ -28,7 +28,7 @@ from torch import nn
 
 
 class AdaptiveRMSNorm(nn.Module):
-    def __init__(self, hidden_size: int, eps: float = 1e-6):
+    def __init__(self, hidden_size: int, eps: float = 1e-8):
         super().__init__()
         self.scale = hidden_size**0.5
         self.eps = eps

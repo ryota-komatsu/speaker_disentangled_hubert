@@ -9,7 +9,7 @@ from datasets import Array2D, Audio, Features, Sequence, Value, load_dataset
 from torch.nn.utils.rnn import pad_sequence
 
 from ..bigvgan.data import mel_spectrogram
-from ..s5hubert import S5HubertForSyllableDiscovery
+from ..s5hubert import SylRegForSyllableDiscovery
 
 
 def truncate(example: Dict[str, Any], max_frames: int = 512) -> Dict[str, Any]:
@@ -57,7 +57,7 @@ def get_collate_fn(pad_token_id: int = 16384):
 
 
 def tokenize(config):
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
 
     features = Features(
         {

@@ -130,7 +130,7 @@ def tokenize_storycloze(encoder, SC_dir):
 
 
 def tokenize_eval(config):
-    from ...s5hubert import S5HubertForSyllableDiscovery
+    from ...s5hubert import SylRegForSyllableDiscovery
 
     tqdm.pandas()
 
@@ -143,7 +143,7 @@ def tokenize_eval(config):
     swuggy_test_dir = app_dir / "datasets/sLM21-dataset/lexical/test"
     sblimp_test_dir = app_dir / "datasets/sLM21-dataset/syntactic/test"
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
 
     # sWUGGY
     swuggy_dev = pd.read_csv(swuggy_dev_dir / "gold.csv")

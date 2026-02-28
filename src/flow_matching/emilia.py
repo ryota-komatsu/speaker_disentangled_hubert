@@ -31,7 +31,7 @@ from datasets import Array2D, Features, Sequence, Value, load_dataset
 from tqdm import tqdm
 
 from ..bigvgan.data import mel_spectrogram
-from ..s5hubert import S5HubertForSyllableDiscovery
+from ..s5hubert import SylRegForSyllableDiscovery
 
 out_emilia = {
     "EN_B00013_S00913",
@@ -131,7 +131,7 @@ def tokenize_emilia(
     dataset = dataset.shard(num_shards, shard_index)
     dataset = dataset.with_format("torch")
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
 
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     manifest_path = Path(data_dir) / f"manifest{shard_index}.json"
@@ -183,7 +183,7 @@ def tokenize_yodas(
     dataset = dataset.shard(num_shards, shard_index)
     dataset = dataset.with_format("torch")
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
 
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     manifest_path = Path(data_dir) / f"manifest{shard_index}.json"

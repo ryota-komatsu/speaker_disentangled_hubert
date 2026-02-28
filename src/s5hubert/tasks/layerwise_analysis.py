@@ -10,7 +10,6 @@ from transformers import HubertModel
 from ...sdhubert.utils.syllable import BoundaryDetectionEvaluator
 from ..utils.mincut import parallel_mincut
 
-plt.rcParams["text.usetex"] = True
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42
 
@@ -82,7 +81,7 @@ def layerwise_analysis(config):
         results = pd.DataFrame.from_dict([results])
         df.append(results)
 
-    result_dir = Path(config.path.result).parent
+    result_dir = Path("results/fig3")
     result_dir.mkdir(parents=True, exist_ok=True)
     df = pd.concat(df)
     df.to_csv(result_dir / "layer-wise.csv")
@@ -96,6 +95,6 @@ def layerwise_analysis(config):
     plt.legend(fontsize=14)
     plt.xticks(range(1, 1 + model.config.num_hidden_layers), fontsize=14)
     plt.yticks(fontsize=14)
-    plt.xlabel(r"Transformer encoder layer $l$", fontsize=16)
+    plt.xlabel("Transformer encoder layer", fontsize=16)
     plt.ylabel("Segmentation scores", fontsize=16)
     plt.savefig(result_dir / "layer-wise.pdf", bbox_inches="tight")

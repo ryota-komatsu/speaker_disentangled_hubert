@@ -3,11 +3,11 @@ common:
   seed: 0
 
 path:
-  checkpoint: "models/s5-hubert"
+  checkpoint: "ryota-komatsu/SylReg"
   quantizer1: "models/s5-hubert/quantizer1.npy"
   quantizer2: "models/s5-hubert/quantizer2.npy"
-  segment_dir: "segments/s5-hubert"
-  result: "results/speech2unit/s5-hubert.json"
+  segment_dir: "segments/SylReg"
+  result: "results/table1/SylReg.json"
 
 dataset:
   root: "data" # ${root}/LibriSpeech/train-clean-100, train-clean-360, ...
@@ -38,7 +38,7 @@ training_args:
   learning_rate: 0.0001
   weight_decay: 0.01
   max_grad_norm: 0.001
-  max_steps: 13000
+  max_steps: 10000
   lr_scheduler_type: "constant_with_warmup"
   warmup_steps: 100
   logging_steps: 10
@@ -53,8 +53,8 @@ training_args:
   resume_from_checkpoint: null
 
 quantizer:
-  n_clusters1: 24576
-  n_clusters2: 16384
+  n_clusters1: 16384
+  n_clusters2: 4096
   niter: 50
   nredo: 5
   verbose: true

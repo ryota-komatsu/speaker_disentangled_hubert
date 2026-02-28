@@ -40,15 +40,14 @@ training_args:
   learning_rate: 0.0001
   weight_decay: 0.01
   max_grad_norm: 0.5
-  max_steps: 13000
-  lr_scheduler_type: "warmup_stable_decay"
-  lr_scheduler_kwargs: {"num_decay_steps": 5200, "min_lr_ratio": 0.1, "decay_type": "linear"}
-  warmup_steps: 2600
+  max_steps: 10000
+  lr_scheduler_type: "constant_with_warmup"
+  warmup_steps: 100
   logging_steps: 10
-  save_steps: 1300
+  save_steps: 1000
   save_total_limit: null
   bf16: true
-  eval_steps: 1300
+  eval_steps: 1000
   dataloader_num_workers: 6
   remove_unused_columns: false
   optim: "adamw_torch_fused"
@@ -56,8 +55,8 @@ training_args:
   resume_from_checkpoint: null
 
 quantizer:
-  n_clusters1: 24576
-  n_clusters2: 16384
+  n_clusters1: 16384
+  n_clusters2: 4096
   niter: 50
   nredo: 5
   verbose: true

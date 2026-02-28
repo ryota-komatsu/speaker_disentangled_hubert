@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from ..models.hubert import HubertForSyllableDiscovery
 from ..models.s5hubert import S5HubertForSyllableDiscovery
+from ..models.sylreg import SylRegForSyllableDiscovery
 from ..models.vghubert import VGHubertForSyllableDiscovery
 from ..utils.data import LibriSpeech
 from ..utils.mincut import parallel_mincut
@@ -19,7 +20,7 @@ MODELS = {
 }
 
 
-def syllable_segmentation(config):
+def _syllable_segmentation(config):
     if config.model.model_type.startswith("s5hubert"):
         model = S5HubertForSyllableDiscovery.from_pretrained(
             config.path.checkpoint,
@@ -106,15 +107,18 @@ def syllable_segmentation(config):
         )
 
 
-def _syllable_segmentation(config):
-    model = S5HubertForSyllableDiscovery.from_pretrained(
-        config.path.checkpoint,
-        segmentation_layer=config.model.segmentation_layer,
-        sec_per_syllable=config.mincut.sec_per_syllable,
-        merge_threshold=config.mincut.merge_threshold,
-        min_duration=config.mincut.min_duration,
-        max_duration=config.mincut.max_duration,
-    ).cuda()
+def syllable_segmentation(config):
+    if config.model.model_type.startswith("s5hubert"):
+        model = S5HubertForSyllableDiscovery.from_pretrained(
+            config.path.checkpoint,
+            segmentation_layer=config.model.segmentation_layer,
+            sec_per_syllable=config.mincut.sec_per_syllable,
+            merge_threshold=config.mincut.merge_threshold,
+            min_duration=config.mincut.min_duration,
+            max_duration=config.mincut.max_duration,
+        ).cuda()
+    else:
+        model = SylRegForSyllableDiscovery.from_pretrained(config.path.checkpoint).cuda()
 
     dataset = ConcatDataset(
         [

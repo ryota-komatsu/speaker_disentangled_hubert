@@ -34,13 +34,13 @@ import torchaudio
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from src.flow_matching import FlowMatchingWithBigVGan
-from src.s5hubert import S5HubertForSyllableDiscovery
+from src.s5hubert import SylRegForSyllableDiscovery
 
 wav_path = "/path/to/wav"
 
 # download pretrained models from hugging face hub
-encoder = S5HubertForSyllableDiscovery.from_pretrained("ryota-komatsu/s5-hubert", device_map="cuda")
-decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/s5-hubert-decoder-ft", device_map="cuda")
+encoder = SylRegForSyllableDiscovery.from_pretrained("ryota-komatsu/SylReg-Distill", device_map="cuda")
+decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/SylReg-Decoder", device_map="cuda")
 speechlm = AutoModelForCausalLM.from_pretrained("/path/to/speechLM", device_map="cuda")
 tokenizer = AutoTokenizer.from_pretrained("/path/to/speechLM")
 

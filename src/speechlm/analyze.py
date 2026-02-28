@@ -5,7 +5,7 @@ import torch
 import torchaudio
 from transformers import AutoTokenizer
 
-from ..s5hubert.models.sylreg import SylRegForSyllableDiscovery
+from ..s5hubert import SylRegForSyllableDiscovery
 from .models import Qwen2Model
 
 warnings.simplefilter("ignore", UserWarning)

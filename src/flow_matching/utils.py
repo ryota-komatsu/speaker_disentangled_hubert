@@ -1,10 +1,10 @@
 import torch
 
-from ..s5hubert import S5HubertForSyllableDiscovery
+from ..s5hubert import SylRegForSyllableDiscovery
 
 
 def get_input_embeddings(model_name_or_path: str, freeze: bool = True) -> torch.nn.Embedding:
-    model = S5HubertForSyllableDiscovery.from_pretrained(model_name_or_path)
+    model = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path)
     embeddings = torch.zeros(model.config.vocab_size, model.quantizer1.shape[1])
 
     for idx, unit in enumerate(model.quantizer2):

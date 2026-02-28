@@ -9,11 +9,12 @@ dataset_root=${1:-data}
 
 if [ ! -d models/sdhubert_base ]
 then
-    echo download SD-HuBERT models from the following links and place them under models/sdhubert_base/
-    echo https://drive.google.com/file/d/1u2jTdAck8qD6ZEb5bqHfvUNsN-9DgGfg/view?usp=drive_link
-    echo https://drive.google.com/file/d/14zdEttya2X8PdjDMUt4lyHWOOY2OS3Zr/view?usp=drive_link
-    echo https://drive.google.com/file/d/19XisepDAfULOKFY147RDYT5UAk2ZnCr-/view?usp=drive_link
-    exit 1
+    mkdir models/sdhubert_base
+    cd models/sdhubert_base
+    gdown --id 1u2jTdAck8qD6ZEb5bqHfvUNsN-9DgGfg
+    gdown --id 14zdEttya2X8PdjDMUt4lyHWOOY2OS3Zr
+    gdown --id 19XisepDAfULOKFY147RDYT5UAk2ZnCr-
+    cd -
 fi
 
 cd src/sdhubert

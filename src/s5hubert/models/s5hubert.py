@@ -249,7 +249,7 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
         self,
         config,
         segmentation_layer: int = 8,
-        n_units_step1: int = 24576,
+        n_units_step1: int = 16384,
         seed: int = 0,
         deduplicate: bool = True,
         sec_per_syllable: float = 0.15,

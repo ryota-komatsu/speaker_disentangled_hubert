@@ -1,5 +1,5 @@
 path:
-  result: "results/unit2speech/default.csv"
+  result: "results/table5/SylReg-Distill.csv"
 
 dataset:
   HF_HOME: "~/.cache/huggingface"
@@ -112,10 +112,10 @@ vocoder:
   validation_interval: 10000
 
 speech2unit:
-  model_name_or_path: "ryota-komatsu/s5-hubert"
+  model_name_or_path: "ryota-komatsu/SylReg-Distill"
 
 unit2speech:
-  model_name_or_path: "ryota-komatsu/s5-hubert-decoder-ft"
+  model_name_or_path: "ryota-komatsu/SylReg-Decoder"
 
 asr:
   model_name_or_path: "openai/whisper-large-v3"

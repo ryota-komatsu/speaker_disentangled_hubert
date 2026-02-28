@@ -35,6 +35,8 @@ from datasets import load_dataset
 from tqdm import tqdm
 from transformers.models.whisper.english_normalizer import ADDITIONAL_DIACRITICS
 
+from ...s5hubert import SylRegForSyllableDiscovery
+
 vocab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\",.?! ;:()[]—_" + "".join(ADDITIONAL_DIACRITICS)
 pattern = f"[^{re.escape(vocab)}]"
 
@@ -83,7 +85,6 @@ def tokenize_librilight_(
     min_len_sec: int = 5,
     max_len_sec: int = 30,
 ):
-    from ...s5hubert import S5HubertForSyllableDiscovery
 
     tgt_chunk_size = tgt_len_sec * 16000 + 80
     min_chunk_size = min_len_sec * 16000 + 80
@@ -93,7 +94,7 @@ def tokenize_librilight_(
     shard_size = (len(data_files) // num_shards) + 1
     dataset = data_files[shard_index * shard_size : (shard_index + 1) * shard_size]
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
 
     manifest_path = Path(data_dir) / f"manifest{shard_index}.json"
 
@@ -169,7 +170,6 @@ def tokenize_librilight(
     num_shards: int = 1,
     shard_index: int = 0,
 ):
-    from ...s5hubert import S5HubertForSyllableDiscovery
 
     data_files = [
         os.path.join(config.dataset.lh_dir, "libriheavy_cuts_small.jsonl.gz"),
@@ -179,7 +179,7 @@ def tokenize_librilight(
     dataset = load_dataset("json", data_files=data_files, split="train")
     dataset = dataset.shard(num_shards=num_shards, index=shard_index)
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
 
     with open(f"{config.dataset.manifest_prefix}{shard_index}.json", "w") as f:
         for example in tqdm(dataset):

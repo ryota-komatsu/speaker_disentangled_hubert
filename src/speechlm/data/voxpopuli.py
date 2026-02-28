@@ -5,7 +5,7 @@ import torchaudio
 from datasets import load_dataset
 from tqdm import tqdm
 
-from ...s5hubert import S5HubertForSyllableDiscovery
+from ...s5hubert import SylRegForSyllableDiscovery
 
 
 def tokenize_voxpopuli(
@@ -15,7 +15,7 @@ def tokenize_voxpopuli(
     dataset = load_dataset("facebook/voxpopuli", "en", split="train", trust_remote_code=True)
     dataset = dataset.with_format("torch")
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
 
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     manifest_path = Path(data_dir) / "manifest.json"

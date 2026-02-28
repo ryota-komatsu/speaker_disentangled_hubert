@@ -11,7 +11,7 @@ from nltk.tokenize import NLTKWordTokenizer
 from transformers import AutoModelForCausalLM, AutoModelForSpeechSeq2Seq, AutoProcessor, AutoTokenizer, pipeline
 
 from ..flow_matching import FlowMatchingWithBigVGan
-from ..s5hubert import S5HubertForSyllableDiscovery
+from ..s5hubert import SylRegForSyllableDiscovery
 from .utils import calc_auto_bleu
 
 
@@ -47,7 +47,7 @@ def get_evaluator(model, processing_class):
 
 
 def get_generation_evaluator(
-    encoder: S5HubertForSyllableDiscovery,
+    encoder: SylRegForSyllableDiscovery,
     speechlm,
     speechlm_tokenizer,
     decoder: FlowMatchingWithBigVGan,
@@ -103,7 +103,7 @@ def evaluate(config):
     # 1. load models
     nltk_word_tokenizer = NLTKWordTokenizer()
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map=device)
+    encoder = SylRegForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map=device)
     decoder = FlowMatchingWithBigVGan.from_pretrained(config.unit2speech.model_name_or_path, device_map=device)
 
     speechlm = AutoModelForCausalLM.from_pretrained(config.training_args.resume_from_checkpoint, device_map=device)

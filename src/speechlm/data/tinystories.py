@@ -7,7 +7,7 @@ from datasets import load_dataset
 from kokoro import KPipeline
 from tqdm import tqdm
 
-from ...s5hubert import S5HubertForSyllableDiscovery
+from ...s5hubert import SylRegForSyllableDiscovery
 
 vocab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\",.?! ;:0123456789-%"
 oov_pattern = re.compile(f"[^{re.escape(vocab)}]")
@@ -22,7 +22,7 @@ def tokenize_tinystories(
     dataset = load_dataset("roneneldan/TinyStories", split="train")
     dataset = dataset.shard(num_shards, shard_index)
 
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
 
     pipeline = KPipeline(lang_code="a")
 

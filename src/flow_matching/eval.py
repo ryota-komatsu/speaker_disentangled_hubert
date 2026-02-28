@@ -8,7 +8,7 @@ import torch
 from datasets import load_dataset
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
-from ..s5hubert import S5HubertForSyllableDiscovery
+from ..s5hubert import SylRegForSyllableDiscovery
 from .models import FlowMatchingWithBigVGan
 
 sys.path.append("src/utmos")
@@ -16,9 +16,9 @@ warnings.simplefilter("ignore", FutureWarning)
 warnings.simplefilter("ignore", DeprecationWarning)
 from ..utmos.score import Score
 
-sys.path.append("src/textlesslib")
-from src.textlesslib.textless.data.speech_encoder import SpeechEncoder
-from src.textlesslib.textless.vocoders.hifigan.vocoder import CodeHiFiGANVocoder
+# sys.path.append("src/textlesslib")
+# from src.textlesslib.textless.data.speech_encoder import SpeechEncoder
+# from src.textlesslib.textless.vocoders.hifigan.vocoder import CodeHiFiGANVocoder
 
 
 def len_filter(example):
@@ -67,7 +67,7 @@ def get_eval_fn(encoder, decoder, processor, pipe, scorer, data_dir):
 
 @torch.inference_mode()
 def evaluate(config):
-    encoder = S5HubertForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
+    encoder = SylRegForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
     decoder = FlowMatchingWithBigVGan.from_pretrained(config.unit2speech.model_name_or_path, device_map="cuda")
 
     # encoder = SpeechEncoder.by_name(
