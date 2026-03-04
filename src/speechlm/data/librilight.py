@@ -175,6 +175,11 @@ def tokenize_librilight(
         os.path.join(config.dataset.lh_dir, "libriheavy_cuts_small.jsonl.gz"),
         os.path.join(config.dataset.lh_dir, "libriheavy_cuts_medium.jsonl.gz"),
         os.path.join(config.dataset.lh_dir, "libriheavy_cuts_large.jsonl.gz"),
+        os.path.join(config.dataset.lh_dir, "libriheavy_cuts_dev.jsonl.gz"),
+        os.path.join(config.dataset.lh_dir, "libriheavy_cuts_test_clean.jsonl.gz"),
+        os.path.join(config.dataset.lh_dir, "libriheavy_cuts_test_other.jsonl.gz"),
+        os.path.join(config.dataset.lh_dir, "libriheavy_cuts_test_clean_large.jsonl.gz"),
+        os.path.join(config.dataset.lh_dir, "libriheavy_cuts_test_other_large.jsonl.gz"),
     ]
     dataset = load_dataset("json", data_files=data_files, split="train")
     dataset = dataset.shard(num_shards=num_shards, index=shard_index)

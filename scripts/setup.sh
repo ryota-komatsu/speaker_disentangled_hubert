@@ -7,10 +7,6 @@ git clone https://github.com/AlanBaade/SyllableLM.git src/SyllableLM
 git clone https://huggingface.co/spaces/sarulab-speech/UTMOS-demo src/utmos
 git clone https://github.com/facebookresearch/textlesslib.git src/textlesslib
 
-cd src/NeMo
-git checkout 284e0c36e3ab54b93f62d815c1156738b17a39d8
-cd -
-
 cd src/sdhubert
 git checkout ecb6469
 cd -

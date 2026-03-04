@@ -38,7 +38,26 @@ def train(config):
 
     # Datasets
     librilight = load_dataset(config.dataset.name, "Libri-Light", split="train", keep_in_memory=True)
-    train_dataset = concatenate_datasets([librilight, librilight.remove_columns("aligned_units")])
+    libriheavy = load_dataset(config.dataset.name, "libriheavy", split="train", keep_in_memory=True)
+    librispeech = load_dataset(config.dataset.name, "LibriSpeech", split="train", keep_in_memory=True)
+    tinystories = load_dataset(config.dataset.name, "TinyStories", split="train", keep_in_memory=True)
+    peoples_speech = load_dataset(config.dataset.name, "peoples_speech", split="train", keep_in_memory=True)
+    voxpopuli = load_dataset(config.dataset.name, "voxpopuli", split="train", keep_in_memory=True)
+
+    train_dataset = concatenate_datasets(
+        [
+            libriheavy,
+            librispeech,
+            tinystories,
+            peoples_speech,
+            voxpopuli,
+            librilight,
+            librispeech.remove_columns("aligned_units"),
+            tinystories.remove_columns("aligned_units"),
+            peoples_speech.remove_columns("aligned_units"),
+            voxpopuli.remove_columns("aligned_units"),
+        ]
+    )
 
     # Model
     model = AutoModelForCausalLM.from_pretrained(config.model_args.name)

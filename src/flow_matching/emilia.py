@@ -125,7 +125,7 @@ def tokenize_emilia(
     num_shards: int = 1,
     shard_index: int = 0,
     data_dir: str = "data/emilia",
-    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
 ):
     dataset = load_dataset("amphion/Emilia-Dataset", data_files={"en": "Emilia/EN/*.tar"}, split="en", streaming=True)
     dataset = dataset.shard(num_shards, shard_index)
@@ -161,8 +161,6 @@ def tokenize_emilia(
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                "audio_filepath": audio_filepath,
-                "text": text,
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
@@ -175,7 +173,7 @@ def tokenize_yodas(
     num_shards: int = 1,
     shard_index: int = 0,
     data_dir: str = "data/emilia_yodas",
-    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
 ):
     dataset = load_dataset(
         "amphion/Emilia-Dataset", data_files={"en": "Emilia-YODAS/EN/*.tar"}, split="en", streaming=True
@@ -213,8 +211,6 @@ def tokenize_yodas(
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                "audio_filepath": audio_filepath,
-                "text": text,
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),

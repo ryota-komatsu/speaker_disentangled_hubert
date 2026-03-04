@@ -15,6 +15,7 @@ This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syll
 sudo apt install git-lfs  # for UTMOS
 
 # fairseq does not support python 3.11+
+# omegaconf 2.0.6 has a non-standard dependency specifier PyYAML>=5.1.*. pip 24.1 will enforce this behaviour change.
 conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10 pip=24.0 faiss-gpu=1.13.2
 conda activate py310
 pip install -r requirements/requirements.txt
