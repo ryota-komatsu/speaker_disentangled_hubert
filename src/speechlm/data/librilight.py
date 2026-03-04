@@ -80,7 +80,7 @@ def tokenize_librilight_(
     num_shards: int = 1,
     shard_index: int = 0,
     data_dir: str = "data/librilight",
-    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
     tgt_len_sec: int = 25,
     min_len_sec: int = 5,
     max_len_sec: int = 30,
@@ -192,7 +192,6 @@ def tokenize_librilight(
                 frame_offset=math.floor(16000 * max(example["start"], 0)),
                 num_frames=math.floor(16000 * example["duration"]),
             )
-            torchaudio.save(save_path, input_values, sr, encoding="PCM_S", bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
 
@@ -200,7 +199,6 @@ def tokenize_librilight(
             text = normalize_text(text)
 
             example = {
-                # "audio_filepath": save_path,
                 # "text": text,
                 "id": example["id"],
                 "units": outputs[0]["units"].tolist(),

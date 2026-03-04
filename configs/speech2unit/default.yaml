@@ -29,7 +29,7 @@ model:
   head_hidden_size: 2048
   ema_decay: 0.999
   segmentation_layer: 8
-  teacher_update_steps: []
+  teacher_update_steps: [200, 250, 300, 350, 400]
 
 training_args:
   output_dir: "models/s5-hubert"

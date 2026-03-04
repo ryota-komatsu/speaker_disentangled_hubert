@@ -1,5 +1,4 @@
 import glob
-import json
 import os
 import re
 from pathlib import Path
@@ -183,40 +182,6 @@ def tokenize_eval(config):
     sblimp.push_to_hub(config.dataset.name, "sBLIMP")
     tSC.push_to_hub(config.dataset.name, "tSC")
     sSC.push_to_hub(config.dataset.name, "sSC")
-
-
-def align_text(config, shard_index: int = 0):
-    id_to_aligned_text = dict()
-
-    manifest_prefix = Path(config.dataset.manifest_prefix).stem
-    manifest_with_output_file_paths = os.path.join(
-        config.dataset.lh_dir, f"shard{shard_index}/{manifest_prefix}{shard_index}_with_output_file_paths.json"
-    )
-
-    with open(manifest_with_output_file_paths) as f:
-        for example in f:
-            example = json.loads(example.strip())
-
-            id_ = str(Path(example["audio_filepath"]).relative_to(config.dataset.lh_dir).with_suffix(""))
-            aligned_text = []
-
-            if "words_level_ctm_filepath" in example:
-                with open(example["words_level_ctm_filepath"]) as g:
-                    for line in g:
-                        _, _, start, duration, word, _, _, _ = line.split(" ")
-
-                        aligned_text.append(
-                            {
-                                "start_time": float(start),
-                                "end_time": round(float(start) + float(duration), 2),
-                                "word": " " + word,
-                            }
-                        )
-
-            id_to_aligned_text[id_] = aligned_text
-
-    with open(f"data/id_to_aligned_text{shard_index}.json", "w") as f:
-        json.dump(id_to_aligned_text, f)
 
 
 def add_aligned_units(example: Dict[str, Any]) -> Dict[str, Any]:

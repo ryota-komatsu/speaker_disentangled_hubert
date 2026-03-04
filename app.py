@@ -9,13 +9,13 @@ import torchaudio
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
 
 from src.flow_matching import FlowMatchingWithBigVGan
-from src.s5hubert import S5HubertForSyllableDiscovery
+from src.s5hubert import SylRegForSyllableDiscovery
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # download pretrained models from hugging face hub
-encoder = S5HubertForSyllableDiscovery.from_pretrained("ryota-komatsu/s5-hubert", device_map=device)
-decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/s5-hubert-decoder-ft", device_map=device)
+encoder = SylRegForSyllableDiscovery.from_pretrained("ryota-komatsu/SylReg-Distill", device_map=device)
+decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/SylReg-Decoder", device_map=device)
 
 
 def synthesize(audio: str):

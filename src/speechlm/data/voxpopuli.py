@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import torch
 import torchaudio
 from datasets import load_dataset
 from tqdm import tqdm
@@ -10,7 +11,7 @@ from ...s5hubert import SylRegForSyllableDiscovery
 
 def tokenize_voxpopuli(
     data_dir: str = "data/voxpopuli",
-    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
 ):
     dataset = load_dataset("facebook/voxpopuli", "en", split="train", trust_remote_code=True)
     dataset = dataset.with_format("torch")
@@ -29,12 +30,10 @@ def tokenize_voxpopuli(
             input_values = torchaudio.functional.resample(
                 example["audio"]["array"], example["audio"]["sampling_rate"], 16000
             ).unsqueeze(0)
-            torchaudio.save(audio_filepath, input_values, 16000, encoding="PCM_S", bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                # "audio_filepath": audio_filepath,
                 # "text": example["normalized_text"],
                 "id": example["audio_id"],
                 "units": outputs[0]["units"].tolist(),

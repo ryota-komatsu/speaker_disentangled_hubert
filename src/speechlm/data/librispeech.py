@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import torch
 import torchaudio
 from tqdm import tqdm
 
@@ -9,7 +10,7 @@ from ...s5hubert import SylRegForSyllableDiscovery
 
 def tokenize_librispeech(
     data_dir: str = "data/LibriSpeech",
-    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
 ):
     dataset = Path(data_dir).glob("train-*/**/*.flac")
 
@@ -35,7 +36,6 @@ def tokenize_librispeech(
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                # "audio_filepath": audio_filepath,
                 # "text": text.lower(),
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),

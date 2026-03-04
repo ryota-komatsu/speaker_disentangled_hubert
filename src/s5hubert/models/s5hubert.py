@@ -382,6 +382,7 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
             merge_threshold=self.merge_threshold,
             min_duration=self.min_duration,
             max_duration=self.max_duration,
+            norm=True,
         )
 
         for dense, length, segments, segment_features, frame_boundary in zip(
@@ -405,6 +406,9 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
             frame_boundary = torch.stack([frame_boundary[:, 0][start_mask], frame_boundary[:, 1][end_mask]], dim=1)
             segments = frame_boundary * self.sec_per_frame
             segment_features = torch.stack([dense[l:r].mean(0) for l, r in frame_boundary])
+            segment_features = (segment_features - segment_features.mean(dim=1, keepdim=True)) / segment_features.std(
+                dim=1, keepdim=True
+            )
 
             durations = frame_boundary[:, 1] - frame_boundary[:, 0]
 

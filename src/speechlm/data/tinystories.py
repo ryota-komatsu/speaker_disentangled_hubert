@@ -2,6 +2,7 @@ import json
 import re
 from pathlib import Path
 
+import torch
 import torchaudio
 from datasets import load_dataset
 from kokoro import KPipeline
@@ -17,7 +18,7 @@ def tokenize_tinystories(
     num_shards: int = 1,
     shard_index: int = 0,
     data_dir: str = "data/tinystories",
-    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
 ):
     dataset = load_dataset("roneneldan/TinyStories", split="train")
     dataset = dataset.shard(num_shards, shard_index)
@@ -45,12 +46,10 @@ def tokenize_tinystories(
                 audio_filepath = str(audio_filepath)
 
                 input_values = torchaudio.functional.resample(input_values, 24000, 16000).unsqueeze(0)
-                torchaudio.save(audio_filepath, input_values, 16000, encoding="PCM_S", bits_per_sample=16)
 
                 outputs = encoder(input_values.to(encoder.device))
 
                 example = {
-                    # "audio_filepath": audio_filepath,
                     # "text": gs,
                     "id": id_,
                     "units": outputs[0]["units"].tolist(),

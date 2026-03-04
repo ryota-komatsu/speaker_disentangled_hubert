@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import torch
 import torchaudio
 from datasets import load_dataset
 from tqdm import tqdm
@@ -12,7 +13,7 @@ def tokenize_clean(
     num_shards: int = 1,
     shard_index: int = 0,
     data_dir: str = "data/peoples_speech",
-    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
 ):
     dataset = load_dataset("MLCommons/peoples_speech", "clean", split="train", streaming=True)
     dataset = dataset.shard(num_shards, shard_index)
@@ -33,12 +34,10 @@ def tokenize_clean(
             input_values = torchaudio.functional.resample(
                 example["audio"]["array"], example["audio"]["sampling_rate"], 16000
             ).unsqueeze(0)
-            torchaudio.save(audio_filepath, input_values, 16000, encoding="PCM_S", bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                # "audio_filepath": audio_filepath,
                 # "text": example["text"],
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
@@ -50,7 +49,7 @@ def tokenize_clean(
 
 def tokenize_clean_sa(
     data_dir: str = "data/peoples_speech",
-    model_name_or_path: str = "ryota-komatsu/s5-hubert",
+    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
 ):
     dataset = load_dataset("MLCommons/peoples_speech", "clean_sa", split="train", streaming=True)
     dataset = dataset.with_format("torch")
@@ -70,12 +69,10 @@ def tokenize_clean_sa(
             input_values = torchaudio.functional.resample(
                 example["audio"]["array"], example["audio"]["sampling_rate"], 16000
             ).unsqueeze(0)
-            torchaudio.save(audio_filepath, input_values, 16000, encoding="PCM_S", bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
 
             example = {
-                # "audio_filepath": audio_filepath,
                 # "text": example["text"],
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),

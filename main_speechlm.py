@@ -11,7 +11,7 @@ class TaskRunner:
         num_shards: int = 1,
         shard_index: int = 0,
         data_dir: str = "data/librilight",
-        model_name_or_path: str = "ryota-komatsu/s5-hubert",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
         tgt_len_sec: int = 25,
         min_len_sec: int = 5,
         max_len_sec: int = 30,
@@ -31,7 +31,7 @@ class TaskRunner:
     def tokenize_librispeech(
         self,
         data_dir: str = "data/LibriSpeech",
-        model_name_or_path: str = "ryota-komatsu/s5-hubert",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
     ):
         from src.speechlm.data.librispeech import tokenize_librispeech
 
@@ -42,7 +42,7 @@ class TaskRunner:
         num_shards: int = 1,
         shard_index: int = 0,
         data_dir: str = "data/peoples_speech",
-        model_name_or_path: str = "ryota-komatsu/s5-hubert",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
     ):
         from src.speechlm.data.peoples_speech import tokenize_clean
 
@@ -51,7 +51,7 @@ class TaskRunner:
     def tokenize_peoples_speech_clean_sa(
         self,
         data_dir: str = "data/peoples_speech",
-        model_name_or_path: str = "ryota-komatsu/s5-hubert",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
     ):
         from src.speechlm.data.peoples_speech import tokenize_clean_sa
 
@@ -62,7 +62,7 @@ class TaskRunner:
         num_shards: int = 1,
         shard_index: int = 0,
         data_dir: str = "data/tinystories",
-        model_name_or_path: str = "ryota-komatsu/s5-hubert",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
     ):
         from src.speechlm.data.tinystories import tokenize_tinystories
 
@@ -71,7 +71,7 @@ class TaskRunner:
     def tokenize_voxpopuli(
         self,
         data_dir: str = "data/voxpopuli",
-        model_name_or_path: str = "ryota-komatsu/s5-hubert",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
     ):
         from src.speechlm.data.voxpopuli import tokenize_voxpopuli
 

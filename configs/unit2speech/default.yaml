@@ -21,11 +21,11 @@ flow_matching:
     adam_beta1: 0.9
     adam_beta2: 0.95
     max_grad_norm: 0.1
-    max_steps: 400000
+    max_steps: 200000
     lr_scheduler_type: "constant_with_warmup"
     warmup_steps: 1000
     save_steps: 10000
-    save_total_limit: 2
+    save_total_limit: null
     bf16: true
     eval_steps: 10000
     dataloader_num_workers: 16
@@ -52,7 +52,7 @@ flow_matching:
     resume_from_checkpoint: "models/flow_matching/checkpoint-200000"
 
   model_args:
-    vocab_size: 16384
+    vocab_size: 8192
     num_mel_bins: 80
     embedding_dim: 768
     hidden_size: 512
