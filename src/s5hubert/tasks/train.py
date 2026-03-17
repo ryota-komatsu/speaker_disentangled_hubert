@@ -132,6 +132,8 @@ class EvaluationCallback(TrainerCallback):
 
 
 def train(config):
+    training_args = TrainingArguments(**OmegaConf.to_container(config.training_args))
+
     train_dataset = LibriLight(
         data_dir=config.dataset.lh_dir,
         max_sample_size=config.dataset.max_sample_size,
@@ -164,8 +166,6 @@ def train(config):
     model.defrost_transformer_encoder()
     model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
-    training_args = TrainingArguments(**OmegaConf.to_container(config.training_args))
-
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -177,8 +177,8 @@ def train(config):
 
 
 def finetune(config):
-    model = S5HubertForSelfSegmentation(config.model.model_name_or_path)
     training_args = TrainingArguments(**OmegaConf.to_container(config.training_args))
+    model = S5HubertForSelfSegmentation(config.model.model_name_or_path)
     train_dataset = LibriSpeech(root=config.dataset.root, max_sample_size=None)
 
     trainer = Trainer(

@@ -25,6 +25,11 @@ torch.serialization.add_safe_globals(
 def train(config):
     deepspeed.init_distributed()
 
+    # initialize `TrainingArguments` *before* instantiating your model for ``is_deepspeed_zero3_enabled`` query
+    # https://github.com/huggingface/transformers/blob/v5.3.0/src/transformers/training_args.py#L714
+    # https://github.com/huggingface/accelerate/blob/v1.13.0/src/accelerate/utils/deepspeed.py#L163
+    training_args = TrainingArguments(**OmegaConf.to_container(config.training_args))
+
     # Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(config.model_args.name)
     if tokenizer.pad_token is None:
@@ -47,14 +52,24 @@ def train(config):
     train_dataset = concatenate_datasets(
         [
             libriheavy,
+            libriheavy,
+            librispeech,
             librispeech,
             tinystories,
+            tinystories,
+            peoples_speech,
             peoples_speech,
             voxpopuli,
+            voxpopuli,
+            librilight,
             librilight,
             librispeech.remove_columns("aligned_units"),
+            librispeech.remove_columns("aligned_units"),
+            tinystories.remove_columns("aligned_units"),
             tinystories.remove_columns("aligned_units"),
             peoples_speech.remove_columns("aligned_units"),
+            peoples_speech.remove_columns("aligned_units"),
+            voxpopuli.remove_columns("aligned_units"),
             voxpopuli.remove_columns("aligned_units"),
         ]
     )
@@ -62,8 +77,6 @@ def train(config):
     # Model
     model = AutoModelForCausalLM.from_pretrained(config.model_args.name)
     model.resize_token_embeddings(len(tokenizer), mean_resizing=config.model_args.mean_resizing)
-
-    training_args = TrainingArguments(**OmegaConf.to_container(config.training_args))
 
     trainer = Trainer(
         model=model,

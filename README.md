@@ -148,7 +148,7 @@ qsub -g ${GROUP_NAME} scripts/run_speechlm_deepspeed.bash configs/speechlm/defau
 ```bibtex
 @inproceedings{Komatsu_Self-Supervised_Syllable_Discovery_2024,
   author    = {Komatsu, Ryota and Shinozaki, Takahiro},
-  title     = {Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT},
+  title     = {Self-Supervised Syllable Discovery Based on Speaker-Disentangled {HuBERT}},
   year      = {2024},
   month     = {Dec.},
   booktitle = {IEEE Spoken Language Technology Workshop},

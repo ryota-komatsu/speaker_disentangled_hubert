@@ -10,6 +10,7 @@ ipykernel==6.29.5
 jiwer==4.0.0
 joblib==1.4.0
 kokoro
+liger-kernel
 lightning==2.5.2
 matplotlib==3.8.4
 nltk

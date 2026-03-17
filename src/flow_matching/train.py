@@ -87,6 +87,8 @@ class EvaluationCallback(TrainerCallback):
 
 
 def train_dit(config):
+    training_args = TrainingArguments(**OmegaConf.to_container(config.flow_matching.training_args))
+
     libritts = load_dataset(config.dataset.name, "LibriTTS-R", split="train", keep_in_memory=True)
     emilia = load_dataset(config.dataset.name, "emilia", split="train", keep_in_memory=True)
     yodas = load_dataset(config.dataset.name, "emilia_yodas", split="train")
@@ -98,8 +100,6 @@ def train_dit(config):
 
     model = FlowMatchingModel(FlowMatchingConfig(**OmegaConf.to_container(config.flow_matching.model_args)))
     model.set_input_embeddings(get_input_embeddings(config.speech2unit.model_name_or_path))
-
-    training_args = TrainingArguments(**OmegaConf.to_container(config.flow_matching.training_args))
 
     trainer = Trainer(
         model=model,
@@ -119,12 +119,12 @@ def train_dit(config):
 
 
 def finetune_dit(config):
+    training_args = TrainingArguments(**OmegaConf.to_container(config.flow_matching.finetuning_args))
+
     train_dataset = load_dataset(config.dataset.name, "Hi-Fi-CAPTAIN", split="female", keep_in_memory=True)
     train_dataset = train_dataset.with_format("torch")
 
     model = FlowMatchingModel.from_pretrained(config.flow_matching.finetuning_args.resume_from_checkpoint)
-
-    training_args = TrainingArguments(**OmegaConf.to_container(config.flow_matching.finetuning_args))
 
     trainer = Trainer(
         model=model,
