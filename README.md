@@ -16,7 +16,8 @@ sudo apt install git-lfs  # for UTMOS
 
 # fairseq does not support python 3.11+
 # omegaconf 2.0.6 has a non-standard dependency specifier PyYAML>=5.1.*. pip 24.1 will enforce this behaviour change.
-conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10 pip=24.0 faiss-gpu=1.13.2
+# pin to setuptools=81.0.0 See https://github.com/tensorflow/tensorboard/issues/7003
+conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2
 conda activate py310
 pip install -r requirements/requirements.txt
 
@@ -40,9 +41,9 @@ from src.s5hubert import SylRegForSyllableDiscovery
 wav_path = "/path/to/wav"
 
 # download pretrained models from hugging face hub
-encoder = SylRegForSyllableDiscovery.from_pretrained("ryota-komatsu/SylReg-Distill", device_map="cuda")
-decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/SylReg-Decoder", device_map="cuda")
-speechlm = AutoModelForCausalLM.from_pretrained("/path/to/speechLM", device_map="cuda")
+encoder = SylRegForSyllableDiscovery.from_pretrained("ryota-komatsu/SylReg-Distill", device_map="cuda", dtype="auto")
+decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/SylReg-Decoder", device_map="cuda", dtype="auto")
+speechlm = AutoModelForCausalLM.from_pretrained("/path/to/speechLM", device_map="cuda", dtype="auto")
 tokenizer = AutoTokenizer.from_pretrained("/path/to/speechLM")
 
 # load a waveform

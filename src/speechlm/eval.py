@@ -103,13 +103,25 @@ def evaluate(config):
     # 1. load models
     nltk_word_tokenizer = NLTKWordTokenizer()
 
-    encoder = SylRegForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map=device)
-    decoder = FlowMatchingWithBigVGan.from_pretrained(config.unit2speech.model_name_or_path, device_map=device)
+    encoder = SylRegForSyllableDiscovery.from_pretrained(
+        config.speech2unit.model_name_or_path,
+        device_map=device,
+        dtype="auto",
+    )
+    decoder = FlowMatchingWithBigVGan.from_pretrained(
+        config.unit2speech.model_name_or_path,
+        device_map=device,
+        dtype="auto",
+    )
 
-    speechlm = AutoModelForCausalLM.from_pretrained(config.training_args.resume_from_checkpoint, device_map=device)
+    speechlm = AutoModelForCausalLM.from_pretrained(
+        config.training_args.resume_from_checkpoint,
+        device_map=device,
+        dtype="auto",
+    )
     speechlm_tokenizer = AutoTokenizer.from_pretrained(config.training_args.resume_from_checkpoint)
 
-    textlm = AutoModelForCausalLM.from_pretrained(config.textlm.model_name_or_path, device_map=device)
+    textlm = AutoModelForCausalLM.from_pretrained(config.textlm.model_name_or_path, device_map=device, dtype="auto")
     textlm_tokenizer = AutoTokenizer.from_pretrained(config.textlm.model_name_or_path)
 
     asr = AutoModelForSpeechSeq2Seq.from_pretrained(

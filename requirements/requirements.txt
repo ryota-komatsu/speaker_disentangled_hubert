@@ -1,11 +1,13 @@
 --extra-index-url https://download.pytorch.org/whl/cu124
 beartype
+better_profanity
 datasets==3.6.0
 deepspeed==0.18.5
 fairseq==0.12.2
 fire
 gateloop_transformer
 gdown
+hf-xet==1.4.3
 ipykernel==6.29.5
 jiwer==4.0.0
 joblib==1.4.0

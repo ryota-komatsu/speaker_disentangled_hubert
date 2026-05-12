@@ -61,7 +61,21 @@ def change_gender(x: np.ndarray, sr: int = 16000, lo=65, hi=400, f0_threshold=15
     except:
         return np.copy(x)
 
-    if f0_threshold < f0_med:
+    if f0_threshold is None:
+        ratio_fs = np.random.uniform(1, 1.4)
+        coin = np.random.random() > 0.5
+        ratio_fs = coin * ratio_fs + (1 - coin) * (1 / ratio_fs)
+
+        ratio_ps = np.random.uniform(1, 2)
+        coin = np.random.random() > 0.5
+        ratio_ps = coin * ratio_ps + (1 - coin) * (1 / ratio_ps)
+
+        ratio_pr = np.random.uniform(1, 1.5)
+        coin = np.random.random() > 0.5
+        ratio_pr = coin * ratio_pr + (1 - coin) * (1 / ratio_pr)
+
+        new_f0_med = f0_med * ratio_ps
+    elif f0_threshold < f0_med:
         lo, hi, ratio_fs, new_f0_med, ratio_pr = 100, 400, 1 / 1.1, 100, 1 / 1.2
     else:
         lo, hi, ratio_fs, new_f0_med, ratio_pr = 75, 250, 1.1, 300, 1.2

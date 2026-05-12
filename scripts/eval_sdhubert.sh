@@ -11,9 +11,9 @@ if [ ! -d models/sdhubert_base ]
 then
     mkdir models/sdhubert_base
     cd models/sdhubert_base
-    gdown --id 1u2jTdAck8qD6ZEb5bqHfvUNsN-9DgGfg
-    gdown --id 14zdEttya2X8PdjDMUt4lyHWOOY2OS3Zr
-    gdown --id 19XisepDAfULOKFY147RDYT5UAk2ZnCr-
+    gdown 1u2jTdAck8qD6ZEb5bqHfvUNsN-9DgGfg
+    gdown 14zdEttya2X8PdjDMUt4lyHWOOY2OS3Zr
+    gdown 19XisepDAfULOKFY147RDYT5UAk2ZnCr-
     cd -
 fi
 
