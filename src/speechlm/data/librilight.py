@@ -197,6 +197,7 @@ def tokenize_librilight(
                 frame_offset=math.floor(16000 * max(example["start"], 0)),
                 num_frames=math.floor(16000 * example["duration"]),
             )
+            torchaudio.save(save_path, input_values, 16000, bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
 
@@ -204,7 +205,6 @@ def tokenize_librilight(
             text = normalize_text(text)
 
             example = {
-                # "text": text,
                 "id": example["id"],
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),

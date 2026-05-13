@@ -19,8 +19,10 @@ def tokenize_tinystories(
     shard_index: int = 0,
     data_dir: str = "data/tinystories",
     model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
+    num_proc: int = 6,
 ):
     dataset = load_dataset("roneneldan/TinyStories", split="train")
+    dataset = dataset.filter(lambda example: not oov_pattern.search(example["text"]), num_proc=num_proc)
     dataset = dataset.shard(num_shards, shard_index)
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
@@ -33,9 +35,6 @@ def tokenize_tinystories(
     with open(manifest_path, "w") as f:
         for i, example in enumerate(tqdm(dataset)):
             text = re.sub(r"\s+", " ", example["text"])
-
-            if oov_pattern.search(text):
-                continue
 
             generator = pipeline(text, voice="af_heart")
 
@@ -50,7 +49,6 @@ def tokenize_tinystories(
                 outputs = encoder(input_values.to(encoder.device))
 
                 example = {
-                    # "text": gs,
                     "id": id_,
                     "units": outputs[0]["units"].tolist(),
                     "durations": outputs[0]["durations"].tolist(),

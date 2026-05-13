@@ -53,6 +53,8 @@ class SylRegForSyllableDiscovery(PreTrainedModel):
 
         fix_random_seed(seed)
 
+        self.post_init()
+
     @classmethod
     def load_pretrained(cls, model_path, quantizer1_path, quantizer2_path, **kwargs) -> "SylRegForSyllableDiscovery":
         """

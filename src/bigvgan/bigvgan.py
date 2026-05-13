@@ -190,6 +190,8 @@ class BigVGan(PreTrainedModel):
             self.ups[i].apply(init_weights)
         self.conv_post.apply(init_weights)
 
+        self.post_init()
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Args:

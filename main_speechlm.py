@@ -6,6 +6,28 @@ from omegaconf import OmegaConf
 
 
 class TaskRunner:
+    def tokenize_emilia(
+        self,
+        num_shards: int = 1,
+        shard_index: int = 0,
+        data_dir: str = "data/emilia",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
+    ):
+        from src.speechlm.data.emilia import tokenize_emilia
+
+        tokenize_emilia(num_shards, shard_index, data_dir, model_name_or_path)
+
+    def tokenize_yodas(
+        self,
+        num_shards: int = 1,
+        shard_index: int = 0,
+        data_dir: str = "data/emilia_yodas",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
+    ):
+        from src.speechlm.data.emilia import tokenize_yodas
+
+        tokenize_yodas(num_shards, shard_index, data_dir, model_name_or_path)
+
     def tokenize_librilight(
         self,
         num_shards: int = 1,

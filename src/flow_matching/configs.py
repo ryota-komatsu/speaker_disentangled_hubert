@@ -24,6 +24,7 @@ class FlowMatchingConfig(PretrainedConfig):
         max_position_embeddings=None,
         dt: float = 0.1,
         cfg_strength: float = 0.7,
+        rope_parameters=None,
         **kwargs,
     ):
         self.vocab_size = vocab_size
@@ -42,6 +43,7 @@ class FlowMatchingConfig(PretrainedConfig):
         self.max_position_embeddings = max_position_embeddings
         self.dt = dt
         self.cfg_strength = cfg_strength
+        self.rope_parameters = rope_parameters
         super().__init__(**kwargs)
 
 

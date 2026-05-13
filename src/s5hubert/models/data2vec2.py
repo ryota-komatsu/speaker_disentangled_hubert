@@ -368,6 +368,8 @@ class Data2VecMultiModel(PreTrainedModel):
             if len(p.shape) == 1 or pn.endswith(".bias") or "alibi_scale" in pn:
                 p.optim_overrides = {"optimizer": {"weight_decay_scale": 0}}
 
+        self.post_init()
+
     def forward(
         self,
         input_values: torch.FloatTensor,

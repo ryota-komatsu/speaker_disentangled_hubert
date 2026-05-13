@@ -411,6 +411,8 @@ class FlowMatchingModel(PreTrainedModel):
         self.to_pred = nn.Linear(config.hidden_size, config.num_mel_bins, bias=False)
         self.duration_predictor = FlowMatchingDurationPredictor(config)
 
+        self.post_init()
+
     def forward(
         self,
         input_ids: torch.LongTensor,
@@ -559,6 +561,8 @@ class FlowMatchingModelV2(PreTrainedModel):
 
         self.to_pred = nn.Linear(config.hidden_size, config.num_mel_bins, bias=False)
         self.duration_predictor = FlowMatchingDurationPredictor(config)
+
+        self.post_init()
 
     def forward(
         self,
@@ -720,6 +724,8 @@ class FlowMatchingWithBigVGan(PreTrainedModel):
         super().__init__(config)
         self.model = FlowMatchingModel(config.model_config)
         self.vocoder = BigVGan(config.vocoder_config)
+
+        self.post_init()
 
     @classmethod
     def load_pretrained(

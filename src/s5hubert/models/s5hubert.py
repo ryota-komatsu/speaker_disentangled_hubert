@@ -285,6 +285,8 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
 
         fix_random_seed(seed)
 
+        self.post_init()
+
     @classmethod
     def load_pretrained(cls, model_path, quantizer1_path, quantizer2_path, **kwargs) -> "S5HubertForSyllableDiscovery":
         """
@@ -518,7 +520,7 @@ class S5HubertForSelfSegmentation(nn.Module):
             labels = torch.cat(
                 [
                     torch.repeat_interleave(
-                        torch.stack([dense[l:r].mean(0) for l, r in frame_boundary]),
+                        torch.segment_reduce(dense, "mean", lengths=frame_boundary[:, 1] - frame_boundary[:, 0]),
                         frame_boundary[:, 1] - frame_boundary[:, 0],
                         dim=0,
                     )

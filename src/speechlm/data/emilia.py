@@ -26,12 +26,14 @@ import json
 import re
 from pathlib import Path
 
+import torch
 import torchaudio
-from datasets import Array2D, Features, Sequence, Value, load_dataset
+from better_profanity import profanity
+from datasets import Array2D, Audio, Features, Sequence, Value, load_dataset
 from tqdm import tqdm
 
-from ..bigvgan.data import mel_spectrogram
-from ..s5hubert import SylRegForSyllableDiscovery
+from ...bigvgan.data import mel_spectrogram
+from ...s5hubert import SylRegForSyllableDiscovery
 
 out_emilia = {
     "EN_B00013_S00913",
@@ -121,6 +123,26 @@ vocab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\",.?! ;:012345678
 oov_pattern = re.compile(f"[^{re.escape(vocab)}]")
 
 
+def filter_emilia(example: dict):
+    return (
+        oov_pattern.search(example["json"]["text"])
+        or profanity.contains_profanity(example["json"]["text"])
+        or example["json"]["dnsmos"] < 3.45
+        or example["json"]["duration"] < 10
+        or example["json"]["wav"].split("/")[1] in out_emilia
+    )
+
+
+def filter_yodas(example: dict):
+    return (
+        oov_pattern.search(example["json"]["text"])
+        or profanity.contains_profanity(example["json"]["text"])
+        or example["json"]["dnsmos"] < 3.45
+        or example["json"]["duration"] < 10
+        or example["json"]["speaker"] in out_yodas
+    )
+
+
 def tokenize_emilia(
     num_shards: int = 1,
     shard_index: int = 0,
@@ -129,6 +151,7 @@ def tokenize_emilia(
 ):
     dataset = load_dataset("amphion/Emilia-Dataset", data_files={"en": "Emilia/EN/*.tar"}, split="en", streaming=True)
     dataset = dataset.shard(num_shards, shard_index)
+    dataset = dataset.cast_column("mp3", Audio(sampling_rate=16000))
     dataset = dataset.with_format("torch")
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
@@ -138,25 +161,18 @@ def tokenize_emilia(
 
     with open(manifest_path, "w") as f:
         for example in tqdm(dataset):
-            text = re.sub(r"\s+", " ", example["json"]["text"])
-
-            if (
-                oov_pattern.search(text)
-                or example["json"]["dnsmos"] < 3.45
-                or example["json"]["duration"] < 10
-                or example["json"]["wav"].split("/")[1] in out_emilia
-            ):
+            if filter_emilia(example):
                 continue
+
+            text = re.sub(r"\s+", " ", example["json"]["text"])
 
             id_ = str(Path(example["json"]["wav"]).with_suffix(""))
             audio_filepath = (Path(data_dir) / id_).with_suffix(".flac")
             audio_filepath.parent.mkdir(parents=True, exist_ok=True)
             audio_filepath = str(audio_filepath)
 
-            input_values = torchaudio.functional.resample(
-                example["mp3"]["array"], example["mp3"]["sampling_rate"], 16000
-            ).unsqueeze(0)
-            torchaudio.save(audio_filepath, input_values, 16000, encoding="PCM_S", bits_per_sample=16)
+            input_values = example["mp3"]["array"].unsqueeze(0)
+            torchaudio.save(audio_filepath, input_values, 16000, bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
 
@@ -179,6 +195,7 @@ def tokenize_yodas(
         "amphion/Emilia-Dataset", data_files={"en": "Emilia-YODAS/EN/*.tar"}, split="en", streaming=True
     )
     dataset = dataset.shard(num_shards, shard_index)
+    dataset = dataset.cast_column("mp3", Audio(sampling_rate=16000))
     dataset = dataset.with_format("torch")
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
@@ -188,25 +205,18 @@ def tokenize_yodas(
 
     with open(manifest_path, "w") as f:
         for example in tqdm(dataset):
-            text = re.sub(r"\s+", " ", example["json"]["text"])
-
-            if (
-                oov_pattern.search(text)
-                or example["json"]["dnsmos"] < 3.45
-                or example["json"]["duration"] < 10
-                or example["json"]["speaker"] in out_yodas
-            ):
+            if filter_yodas(example):
                 continue
+
+            text = re.sub(r"\s+", " ", example["json"]["text"])
 
             id_ = str(Path(example["__url__"]).stem / example["json"]["speaker"] / example["json"]["_id"])
             audio_filepath = (Path(data_dir) / id_).with_suffix(".flac")
             audio_filepath.parent.mkdir(parents=True, exist_ok=True)
             audio_filepath = str(audio_filepath)
 
-            input_values = torchaudio.functional.resample(
-                example["mp3"]["array"], example["mp3"]["sampling_rate"], 16000
-            ).unsqueeze(0)
-            torchaudio.save(audio_filepath, input_values, 16000, encoding="PCM_S", bits_per_sample=16)
+            input_values = example["mp3"]["array"].unsqueeze(0)
+            torchaudio.save(audio_filepath, input_values, 16000, bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
 
