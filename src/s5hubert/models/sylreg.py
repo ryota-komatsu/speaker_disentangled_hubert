@@ -132,13 +132,13 @@ class SylRegForSyllableDiscovery(PreTrainedModel):
             intermediate_units = intermediate_units[start_mask]
             units = units[start_mask]
             frame_boundary = torch.stack([frame_boundary[:, 0][start_mask], frame_boundary[:, 1][end_mask]], dim=1)
+            durations = frame_boundary[:, 1] - frame_boundary[:, 0]
             segments = frame_boundary * self.sec_per_frame
-            segment_features = torch.stack([dense[l:r].mean(0) for l, r in frame_boundary])
+
+            segment_features = torch.segment_reduce(dense, "mean", lengths=durations)
             segment_features = (segment_features - segment_features.mean(dim=1, keepdim=True)) / segment_features.std(
                 dim=1, keepdim=True
             )
-
-            durations = frame_boundary[:, 1] - frame_boundary[:, 0]
 
             if not self.deduplicate:
                 units = torch.repeat_interleave(units, durations)

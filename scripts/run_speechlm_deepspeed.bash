@@ -12,7 +12,7 @@ config=${1:-configs/speechlm/default.yaml}
 hostfile=${2:-configs/speechlm/hostfile}
 
 module load openmpi/5.0.7-nvhpc
-module load cudnn/9.0.0
+module load cudnn/9.8.0
 module load nccl/2.20.5
 module load miniconda
 

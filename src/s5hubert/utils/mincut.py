@@ -150,30 +150,40 @@ def mincut_torch(
     batch_frame_boundaries = []
 
     for batch_idx in range(bsz):
-        seg_boundary_frame = batch_seg_boundary_frame[batch_idx]
+        seg_boundary_frame = torch.tensor(batch_seg_boundary_frame[batch_idx], device=batch_hidden_states.device)
         hidden_states = batch_hidden_states[batch_idx]
 
-        seg_boundary_frame_pairs = [[l, r] for l, r in zip(seg_boundary_frame[:-1], seg_boundary_frame[1:])]
-        pooled_feat = torch.stack([hidden_states[l:r].mean(0) for l, r in seg_boundary_frame_pairs])
+        frame_boundaries = torch.stack([seg_boundary_frame[:-1], seg_boundary_frame[1:]], dim=1)
+        durations = frame_boundaries[:, 1] - frame_boundaries[:, 0]
+        pooled_feat = torch.segment_reduce(hidden_states, "mean", lengths=durations)
 
-        if merge_threshold is not None and len(seg_boundary_frame_pairs) >= 3:
+        if merge_threshold is not None and len(frame_boundaries) >= 3:
             all_sim = torch.nn.functional.cosine_similarity(pooled_feat[:-1], pooled_feat[1:])
             min_id = torch.argmax(all_sim)
-            while all_sim[min_id] >= merge_threshold and len(seg_boundary_frame_pairs) >= 3:
-                l_merge, r_merge = seg_boundary_frame_pairs[min_id], seg_boundary_frame_pairs[min_id + 1]
-                seg_boundary_frame_pairs = [
-                    pair for i, pair in enumerate(seg_boundary_frame_pairs) if i != min_id and i != min_id + 1
-                ]
-                seg_boundary_frame_pairs.insert(min_id, [l_merge[0], r_merge[1]])
-                pooled_feat = torch.stack([hidden_states[l:r].mean(0) for l, r in seg_boundary_frame_pairs])
+
+            while all_sim[min_id] >= merge_threshold and len(frame_boundaries) >= 3:
+                frame_boundaries = torch.cat(
+                    [
+                        frame_boundaries[:min_id],
+                        torch.tensor(
+                            [[frame_boundaries[min_id, 0], frame_boundaries[min_id + 1, 1]]],
+                            device=frame_boundaries.device,
+                        ),
+                        frame_boundaries[min_id + 2 :],
+                    ]
+                )
+
+                durations = frame_boundaries[:, 1] - frame_boundaries[:, 0]
+                pooled_feat = torch.segment_reduce(hidden_states, "mean", lengths=durations)
+
                 all_sim = torch.nn.functional.cosine_similarity(pooled_feat[:-1], pooled_feat[1:])
                 min_id = torch.argmax(all_sim)
 
-        boundaries = torch.tensor(seg_boundary_frame_pairs, device=hidden_states.device) * sec_per_frame
-        frame_boundaries = torch.tensor(seg_boundary_frame_pairs, device=hidden_states.device)
+        boundaries = frame_boundaries * sec_per_frame
 
         if norm:
             pooled_feat = (pooled_feat - pooled_feat.mean(dim=1, keepdim=True)) / pooled_feat.std(dim=1, keepdim=True)
+
         batch_boundaries.append(boundaries)
         batch_pooled_feat.append(pooled_feat)
         batch_frame_boundaries.append(frame_boundaries)
@@ -263,6 +273,7 @@ def mincut_numpy(
             / np.linalg.norm(pooled_feat[1:], axis=1)
         )
         min_id = np.argmax(all_sim)
+
         while all_sim[min_id] >= merge_threshold and len(seg_boundary_frame_pairs) >= 3:
             l_merge, r_merge = seg_boundary_frame_pairs[min_id], seg_boundary_frame_pairs[min_id + 1]
             seg_boundary_frame_pairs = [

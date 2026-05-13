@@ -11,7 +11,7 @@
 config=${1:-configs/speechlm/default.yaml}
 config_file=${2:-configs/speechlm/ddp.yaml}
 
-module load cudnn/9.0.0
+module load cudnn/9.8.0
 module load nccl/2.20.5
 module load miniconda
 
