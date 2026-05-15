@@ -33,12 +33,6 @@ class TaskRunner:
         config = OmegaConf.load(config)
         evaluate(config)
 
-    def speaker_identification(self, config: str = "configs/speaker_identification/default.yaml"):
-        from src.s5hubert.tasks.speaker_identification import speaker_identification
-
-        config = OmegaConf.load(config)
-        speaker_identification(config)
-
     def layerwise_analysis(self, config: str = "configs/speech2unit/default.yaml"):
         from src.s5hubert.tasks.layerwise_analysis import layerwise_analysis
 

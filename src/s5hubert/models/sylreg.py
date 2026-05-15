@@ -87,8 +87,6 @@ class SylRegForSyllableDiscovery(PreTrainedModel):
         Returns:
             units (`torch.LongTensor`):
                 Discrete pseudo-syllabic units.
-            intermediate_units (`torch.LongTensor`):
-                Intermediate K-means units.
             durations (`torch.LongTensor`):
                 Durations of units, measured in frames.
             dense (`torch.FloatTensor` of shape `((sequence_length - 400) // 320 + 1, hidden_size)`):
@@ -120,18 +118,14 @@ class SylRegForSyllableDiscovery(PreTrainedModel):
         ):
             dense = dense[:length]
 
-            # K-means
-            intermediate_units = torch.cdist(segment_features, self.quantizer1).argmin(1)
-
             # Agglomerative clustering on K-means centroids
-            units = self.quantizer2[intermediate_units]
+            units = self.quantizer2[torch.cdist(segment_features, self.quantizer1).argmin(1)]
 
             # deduplicate
             diff = units[1:] != units[:-1]
             start_mask = torch.cat([torch.tensor([True], device=units.device), diff])
             end_mask = torch.cat([diff, torch.tensor([True], device=units.device)])
 
-            intermediate_units = intermediate_units[start_mask]
             units = units[start_mask]
             frame_boundary = torch.stack([frame_boundary[:, 0][start_mask], frame_boundary[:, 1][end_mask]], dim=1)
             durations = frame_boundary[:, 1] - frame_boundary[:, 0]
@@ -144,12 +138,10 @@ class SylRegForSyllableDiscovery(PreTrainedModel):
 
             if not self.deduplicate:
                 units = torch.repeat_interleave(units, durations)
-                intermediate_units = torch.repeat_interleave(intermediate_units, durations)
 
             outputs.append(
                 {
                     "units": units,
-                    "intermediate_units": intermediate_units,
                     "durations": durations,
                     "dense": dense,
                     "segments": segments,

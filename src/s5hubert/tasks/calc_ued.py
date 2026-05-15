@@ -1,3 +1,5 @@
+import sys
+
 import torch
 from torch.utils.data import ConcatDataset
 from torchaudio.functional import edit_distance
@@ -9,13 +11,17 @@ from ..utils.data import LibriSpeech
 
 def calc_ued(config):
     if config.model.model_type.startswith("s5hubert"):
-        model = S5HubertForSyllableDiscovery.load_pretrained(
+        model = S5HubertForSyllableDiscovery.from_pretrained(config.path.checkpoint).cuda()
+    elif config.model.model_type == "sylboost":
+        sys.path.append("src/SyllableLM")
+        from ...SyllableLM.extract_units import SylBoostFeatureReader
+
+        model = SylBoostFeatureReader(
             config.path.checkpoint,
             config.path.quantizer1,
             config.path.quantizer2,
-        ).cuda()
-    else:
-        return
+            config.model.model_key,
+        )
 
     dataset = ConcatDataset(
         [
@@ -31,16 +37,24 @@ def calc_ued(config):
 
     for batch in tqdm(data_loader):
         # original
-        refs = model(
-            input_values=batch["teacher_input_values"].cuda(),
-            attention_mask=batch["teacher_attention_mask"].cuda(),
-        )
+        if config.model.model_type.startswith("s5hubert"):
+            refs = model(
+                input_values=batch["teacher_input_values"].cuda(),
+                attention_mask=batch["teacher_attention_mask"].cuda(),
+            )
+        elif config.model.model_type == "sylboost":
+            outputs = model.forward(batch["teacher_input_values"].cuda())
+            refs = [{"units": outputs["clusters_with_times"][0][0]}]
 
         # speaker perturbation
-        hyps = model(
-            input_values=batch["student_input_values"].cuda(),
-            attention_mask=batch["student_attention_mask"].cuda(),
-        )
+        if config.model.model_type.startswith("s5hubert"):
+            hyps = model(
+                input_values=batch["student_input_values"].cuda(),
+                attention_mask=batch["student_attention_mask"].cuda(),
+            )
+        elif config.model.model_type == "sylboost":
+            outputs = model.forward(batch["student_input_values"].cuda())
+            hyps = [{"units": outputs["clusters_with_times"][0][0]}]
 
         # unit edit distance (UED)
         # https://arxiv.org/abs/2209.15483

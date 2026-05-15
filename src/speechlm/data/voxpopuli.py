@@ -12,8 +12,9 @@ from ...s5hubert import SylRegForSyllableDiscovery
 def tokenize_voxpopuli(
     data_dir: str = "data/voxpopuli",
     model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
+    num_proc: int = 6,
 ):
-    dataset = load_dataset("facebook/voxpopuli", "en", split="train", trust_remote_code=True)
+    dataset = load_dataset("facebook/voxpopuli", "en", split="train", trust_remote_code=True, num_proc=num_proc)
     dataset = dataset.with_format("torch")
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")

@@ -7,17 +7,10 @@ import torchaudio
 from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 
-from ..models.hubert import HubertForSyllableDiscovery
 from ..models.s5hubert import S5HubertForSyllableDiscovery
 from ..models.sylreg import SylRegForSyllableDiscovery
-from ..models.vghubert import VGHubertForSyllableDiscovery
 from ..utils.data import LibriSpeech
 from ..utils.mincut import parallel_mincut
-
-MODELS = {
-    "hubert": HubertForSyllableDiscovery,
-    "vghubert": VGHubertForSyllableDiscovery,
-}
 
 
 def _syllable_segmentation(config):
@@ -29,13 +22,6 @@ def _syllable_segmentation(config):
             merge_threshold=config.mincut.merge_threshold,
             min_duration=config.mincut.min_duration,
             max_duration=config.mincut.max_duration,
-        ).cuda()
-    elif config.model.model_type in MODELS:
-        model = MODELS[config.model.model_type](
-            checkpoint_path=config.path.checkpoint,
-            quantizer1_path=None,
-            quantizer2_path=None,
-            segmentation_layer=config.model.segmentation_layer,
         ).cuda()
     elif config.model.model_type == "sylboost":
         sys.path.append("src/SyllableLM")
@@ -72,7 +58,7 @@ def _syllable_segmentation(config):
                 wav_path = str(wav_path)  # for sox backend
                 wav, sr = torchaudio.load(wav_path)
 
-                if config.model.model_type.startswith("s5hubert") or config.model.model_type in MODELS:
+                if config.model.model_type.startswith("s5hubert"):
                     wav = wav.cuda()
                     hidden_states = model.get_hidden_states(wav).cpu().numpy()
                     outputs = {"hidden_states": hidden_states}
@@ -94,7 +80,7 @@ def _syllable_segmentation(config):
                 segment_paths.append(segment_path)
                 np.save(segment_path, outputs)
 
-    if config.model.model_type.startswith("s5hubert") or config.model.model_type in MODELS:
+    if config.model.model_type.startswith("s5hubert"):
         parallel_mincut(
             segment_paths,
             config.common.disable_tqdm,

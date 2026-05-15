@@ -1,7 +1,6 @@
 #!/bin/sh
 
 git clone https://github.com/cheoljun95/sdhubert.git src/sdhubert
-git clone https://github.com/jasonppy/syllable-discovery.git src/vghubert
 git clone https://github.com/Berkeley-Speech-Group/sylber.git src/sylber
 git clone https://github.com/AlanBaade/SyllableLM.git src/SyllableLM
 git clone https://huggingface.co/spaces/sarulab-speech/UTMOS-demo src/utmos

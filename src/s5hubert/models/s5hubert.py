@@ -15,20 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
 from torch import nn
 from torch.nn.utils.rnn import pad_sequence
 from transformers import AutoConfig, AutoModel
-from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.hubert.modeling_hubert import HubertModel, HubertPreTrainedModel
 from transformers.utils import ModelOutput
 
 from ..utils.mincut import mincut_torch
 from ..utils.misc import fix_random_seed
-from .modules import MLP, init_module
+from .modules import MLP
 
 
 class S5Hubert(nn.Module):
@@ -365,8 +364,6 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
         Returns:
             units (`torch.LongTensor`):
                 Discrete pseudo-syllabic units.
-            intermediate_units (`torch.LongTensor`):
-                Intermediate K-means units.
             durations (`torch.LongTensor`):
                 Durations of units, measured in frames.
             dense (`torch.FloatTensor` of shape `((sequence_length - 400) // 320 + 1, hidden_size)`):
@@ -392,18 +389,14 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
         ):
             dense = dense[:length]
 
-            # K-means
-            intermediate_units = torch.cdist(segment_features, self.quantizer1).argmin(1)
-
             # Agglomerative clustering on K-means centroids
-            units = self.quantizer2[intermediate_units]
+            units = self.quantizer2[torch.cdist(segment_features, self.quantizer1).argmin(1)]
 
             # deduplicate
             diff = units[1:] != units[:-1]
             start_mask = torch.cat([torch.tensor([True], device=units.device), diff])
             end_mask = torch.cat([diff, torch.tensor([True], device=units.device)])
 
-            intermediate_units = intermediate_units[start_mask]
             units = units[start_mask]
             frame_boundary = torch.stack([frame_boundary[:, 0][start_mask], frame_boundary[:, 1][end_mask]], dim=1)
             durations = frame_boundary[:, 1] - frame_boundary[:, 0]
@@ -416,12 +409,10 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
 
             if not self.deduplicate:
                 units = torch.repeat_interleave(units, durations)
-                intermediate_units = torch.repeat_interleave(intermediate_units, durations)
 
             outputs.append(
                 {
                     "units": units,
-                    "intermediate_units": intermediate_units,
                     "durations": durations,
                     "dense": dense,
                     "segments": segments,
@@ -537,85 +528,3 @@ class S5HubertForSelfSegmentation(nn.Module):
 
         loss = self.loss_fn(student_hidden_states[student_padding_mask], labels)
         return ModelOutput(loss=loss)
-
-
-class S5HubertForSequenceClassification(nn.Module):
-    def __init__(
-        self,
-        model_name_or_path="models/s5-hubert",
-        classifier_proj_size: int = 256,
-        num_labels: int = 1251,
-        segmentation_layer: int = 8,
-    ):
-        super().__init__()
-
-        self.hubert = HubertModel.from_pretrained(model_name_or_path)
-        self.projector = nn.Linear(self.hubert.config.hidden_size, classifier_proj_size)
-        self.classifier = nn.Linear(classifier_proj_size, num_labels, bias=False)
-
-        # Initialize weights and apply final processing
-        self.reset_parameters()
-        self.num_labels = num_labels
-        self.segmentation_layer = segmentation_layer
-
-        self.freeze_base_model()
-        self.hubert.eval()
-
-    def reset_parameters(self):
-        init_module(self.projector)
-        init_module(self.classifier)
-
-    def freeze_base_model(self):
-        """
-        Calling this function will disable the gradient computation for the base model so that its parameters will not
-        be updated during training. Only the classification head will be updated.
-        """
-        self.hubert.requires_grad_(False)
-
-    def forward(
-        self,
-        input_values: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        output_attentions: Optional[bool] = None,
-        output_hidden_states: Optional[bool] = True,
-        return_dict: Optional[bool] = True,
-        labels: Optional[torch.Tensor] = None,
-    ) -> Union[Tuple, SequenceClassifierOutput]:
-        r"""
-        labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
-            Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
-            config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
-            `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
-        """
-
-        outputs = self.hubert(
-            input_values,
-            attention_mask=attention_mask,
-            output_attentions=output_attentions,
-            output_hidden_states=output_hidden_states,
-            return_dict=return_dict,
-        )
-
-        hidden_states = outputs[1][self.segmentation_layer]
-
-        hidden_states = self.projector(hidden_states)
-        if attention_mask is None:
-            pooled_output = hidden_states.mean(dim=1)
-        else:
-            padding_mask = self.hubert._get_feature_vector_attention_mask(hidden_states.shape[1], attention_mask)
-            hidden_states[~padding_mask] = 0.0
-            pooled_output = hidden_states.sum(dim=1) / padding_mask.sum(dim=1).view(-1, 1)
-
-        logits = self.classifier(pooled_output)
-
-        loss = None
-        if labels is not None:
-            loss_fct = nn.CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-
-        return SequenceClassifierOutput(
-            loss=loss,
-            logits=logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions,
-        )

@@ -23,6 +23,8 @@
 # SOFTWARE.
 
 from nltk.tokenize import NLTKWordTokenizer
+from tokenizers import Regex, Tokenizer, models, pre_tokenizers
+from transformers import OPTConfig, PreTrainedTokenizerFast
 
 
 def calc_ngram(text: str, nltk_word_tokenizer: NLTKWordTokenizer, n: int):
@@ -42,3 +44,58 @@ def calc_auto_bleu(text: str, nltk_word_tokenizer: NLTKWordTokenizer, n: int):
         if ngrams[i] in left or ngrams[i] in right:
             res += 1
     return res / len(ngrams)
+
+
+class OPTForSpeechLMConfig(OPTConfig):
+    def __init__(
+        self,
+        vocab_size: int = 8193,
+        hidden_size: int = 768,
+        num_hidden_layers: int = 12,
+        ffn_dim: int = 3072,
+        max_position_embeddings: int = 256,
+        dropout: float = 0.1,
+        num_attention_heads: int = 12,
+        activation_function="gelu",
+        pad_token_id: int = 8192,
+        bos_token_id: int = None,
+        eos_token_id: int = 8192,
+        **kwargs,
+    ):
+        super().__init__(
+            vocab_size=vocab_size,
+            hidden_size=hidden_size,
+            num_hidden_layers=num_hidden_layers,
+            ffn_dim=ffn_dim,
+            max_position_embeddings=max_position_embeddings,
+            dropout=dropout,
+            num_attention_heads=num_attention_heads,
+            activation_function=activation_function,
+            pad_token_id=pad_token_id,
+            bos_token_id=bos_token_id,
+            eos_token_id=eos_token_id,
+            **kwargs,
+        )
+
+
+class SpeechLMTokenizerFast(PreTrainedTokenizerFast):
+    def __init__(
+        self,
+        vocab_size: int = 8192,
+        bos_token: str = None,
+        eos_token: str = "<|end_of_text|>",
+        unk_token: str = "<|unk|>",
+    ):
+        vocab = [f"<{unit}>" for unit in range(vocab_size)] + [eos_token, unk_token]
+        vocab = {token: token_id for token_id, token in enumerate(vocab)}
+
+        tokenizer_object = Tokenizer(models.WordLevel(vocab, unk_token=unk_token))
+        tokenizer_object.pre_tokenizer = pre_tokenizers.Split(pattern=Regex(r"<\d+>"), behavior="isolated")
+
+        super().__init__(
+            tokenizer_object=tokenizer_object,
+            bos_token=bos_token,
+            eos_token=eos_token,
+            unk_token=unk_token,
+            pad_token=eos_token,
+        )
