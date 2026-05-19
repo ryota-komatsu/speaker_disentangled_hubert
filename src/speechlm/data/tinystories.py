@@ -2,7 +2,6 @@ import json
 import re
 from pathlib import Path
 
-import torch
 import torchaudio
 from datasets import load_dataset
 from kokoro import KPipeline
@@ -40,9 +39,6 @@ def tokenize_tinystories(
 
             for j, (gs, _, input_values) in enumerate(generator):
                 id_ = f"audio{shard_index}/audio{shard_index}_{i:07}_{j:03}"
-                audio_filepath = (Path(data_dir) / id_).with_suffix(".flac")
-                audio_filepath.parent.mkdir(parents=True, exist_ok=True)
-                audio_filepath = str(audio_filepath)
 
                 input_values = torchaudio.functional.resample(input_values, 24000, 16000).unsqueeze(0)
 

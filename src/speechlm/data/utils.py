@@ -13,6 +13,8 @@ from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 from transformers import AutoModelForTokenClassification, AutoProcessor
 
+from ...s5hubert import SylRegForSyllableDiscovery
+
 filler_pattern1 = re.compile(r"\buhm?,?\b", re.IGNORECASE)
 filler_pattern2 = re.compile(r"\bum,?\b", re.IGNORECASE)
 repeat_pattern1 = re.compile(r"\b(\w+)\b([,\s]+\1\b)+", re.IGNORECASE)
@@ -125,8 +127,6 @@ def tokenize_storycloze(encoder, SC_dir):
 
 
 def tokenize_eval(config):
-    from ...s5hubert import SylRegForSyllableDiscovery
-
     tqdm.pandas()
 
     app_dir = Path(config.dataset.APP_DIR).expanduser()
@@ -180,9 +180,11 @@ def tokenize_eval(config):
     sSC.push_to_hub(config.dataset.name, "sSC")
 
 
-def get_aligner(model_name_or_path: str = "bezzam/Qwen3-ForcedAligner-0.6B"):
-    processor = AutoProcessor.from_pretrained(model_name_or_path)
-    model = AutoModelForTokenClassification.from_pretrained(model_name_or_path, dtype=torch.bfloat16, device_map="auto")
+def get_aligner(
+    aligner_name: str = "bezzam/Qwen3-ForcedAligner-0.6B",
+):
+    processor = AutoProcessor.from_pretrained(aligner_name)
+    model = AutoModelForTokenClassification.from_pretrained(aligner_name, dtype=torch.bfloat16, device_map="auto")
 
     @torch.inference_mode()
     def align(input_values: torch.Tensor, text: str) -> List[Dict[str, Any]]:
@@ -195,11 +197,11 @@ def get_aligner(model_name_or_path: str = "bezzam/Qwen3-ForcedAligner-0.6B"):
         inputs = inputs.to(model.device, model.dtype)
 
         # Step 2: Run forced aligner
-        outputs = model(**inputs)
+        aligner_outputs = model(**inputs)
 
         # Step 3: Decode timestamps
         timestamps = processor.decode_forced_alignment(
-            logits=outputs.logits,
+            logits=aligner_outputs.logits,
             input_ids=inputs["input_ids"],
             word_lists=word_lists,
             timestamp_token_id=model.config.timestamp_token_id,

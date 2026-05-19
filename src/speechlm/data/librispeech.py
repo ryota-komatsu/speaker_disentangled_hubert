@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-import torch
 import torchaudio
 from tqdm import tqdm
 

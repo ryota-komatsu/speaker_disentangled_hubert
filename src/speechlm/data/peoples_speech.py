@@ -1,8 +1,6 @@
 import json
 from pathlib import Path
 
-import torch
-import torchaudio
 from datasets import Audio, load_dataset
 from tqdm import tqdm
 
@@ -31,9 +29,6 @@ def tokenize_clean(
             #     continue
 
             id_ = str((Path("clean/train") / example["id"]).with_suffix(""))
-            audio_filepath = (Path(data_dir) / id_).with_suffix(".flac")
-            audio_filepath.parent.mkdir(parents=True, exist_ok=True)
-            audio_filepath = str(audio_filepath)
 
             input_values = example["audio"]["array"].unsqueeze(0)
 
@@ -67,9 +62,6 @@ def tokenize_clean_sa(
             #     continue
 
             id_ = str((Path("clean_sa/train") / example["id"]).with_suffix(""))
-            audio_filepath = (Path(data_dir) / id_).with_suffix(".flac")
-            audio_filepath.parent.mkdir(parents=True, exist_ok=True)
-            audio_filepath = str(audio_filepath)
 
             input_values = example["audio"]["array"].unsqueeze(0)
 
