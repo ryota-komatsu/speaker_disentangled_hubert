@@ -19,7 +19,7 @@ from transformers import (
 from ..bigvgan.bigvgan import BigVGan, BigVGanConfig
 from .configs import FlowMatchingConfig
 from .data import get_collate_fn
-from .models import FlowMatchingModel
+from .models import FlowMatchingModelV2
 from .utils import get_input_embeddings
 
 # register BigVGan
@@ -57,7 +57,7 @@ class EvaluationCallback(TrainerCallback):
         self.dataloader = torch.utils.data.DataLoader(eval_dataset, collate_fn=data_collator)
 
     @torch.inference_mode()
-    def on_step_end(self, args, state, control, model: FlowMatchingModel, **kwargs):
+    def on_step_end(self, args, state, control, model: FlowMatchingModelV2, **kwargs):
         if state.global_step % args.eval_steps != 0 or not state.is_world_process_zero:
             return
 
@@ -98,7 +98,7 @@ def train_dit(config):
     train_dataset = train_dataset.with_format("torch")
     # eval_dataset = eval_dataset.with_format("torch")
 
-    model = FlowMatchingModel(FlowMatchingConfig(**OmegaConf.to_container(config.flow_matching.model_args)))
+    model = FlowMatchingModelV2(FlowMatchingConfig(**OmegaConf.to_container(config.flow_matching.model_args)))
     model.set_input_embeddings(get_input_embeddings(config.speech2unit.model_name_or_path))
 
     trainer = Trainer(
@@ -124,7 +124,7 @@ def finetune_dit(config):
     train_dataset = load_dataset(config.dataset.name, "Hi-Fi-CAPTAIN", split="female", keep_in_memory=True)
     train_dataset = train_dataset.with_format("torch")
 
-    model = FlowMatchingModel.from_pretrained(config.flow_matching.finetuning_args.resume_from_checkpoint)
+    model = FlowMatchingModelV2.from_pretrained(config.flow_matching.finetuning_args.resume_from_checkpoint)
 
     trainer = Trainer(
         model=model,

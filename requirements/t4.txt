@@ -1,10 +1,10 @@
 --extra-index-url https://download.pytorch.org/whl/cu126
-beartype
+accelerate
 better_profanity
 datasets==3.6.0
+deepspeed
 fairseq==0.12.2
 fire
-gateloop_transformer
 hf-xet==1.4.3
 ipykernel==6.29.5
 jiwer==4.0.0
@@ -23,7 +23,4 @@ tensorboard==2.17.0
 timm
 torch==2.11.0+cu126
 torchaudio==2.11.0+cu126
-torchdiffeq
-torchode
-transformers[deepspeed]>=5.1.0  # https://github.com/huggingface/transformers/pull/43711
-vector_quantize_pytorch
+transformers @ git+https://github.com/mbtariq82/transformers.git@qwen3-asr

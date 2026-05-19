@@ -2,7 +2,7 @@ import glob
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ import torchaudio
 from datasets import Dataset, DatasetDict, load_dataset
 from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
+from transformers import AutoModelForTokenClassification, AutoProcessor
 
 filler_pattern1 = re.compile(r"\buhm?,?\b", re.IGNORECASE)
 filler_pattern2 = re.compile(r"\bum,?\b", re.IGNORECASE)
@@ -177,6 +178,44 @@ def tokenize_eval(config):
     sblimp.push_to_hub(config.dataset.name, "sBLIMP")
     tSC.push_to_hub(config.dataset.name, "tSC")
     sSC.push_to_hub(config.dataset.name, "sSC")
+
+
+def get_aligner(model_name_or_path: str = "bezzam/Qwen3-ForcedAligner-0.6B"):
+    processor = AutoProcessor.from_pretrained(model_name_or_path)
+    model = AutoModelForTokenClassification.from_pretrained(model_name_or_path, dtype=torch.bfloat16, device_map="auto")
+
+    @torch.inference_mode()
+    def align(input_values: torch.Tensor, text: str) -> List[Dict[str, Any]]:
+        # Step 1: Prepare alignment inputs
+        inputs, word_lists = processor.prepare_forced_aligner_inputs(
+            audio=input_values.squeeze(0).numpy(),
+            transcript=text,
+            language="English",
+        )
+        inputs = inputs.to(model.device, model.dtype)
+
+        # Step 2: Run forced aligner
+        outputs = model(**inputs)
+
+        # Step 3: Decode timestamps
+        timestamps = processor.decode_forced_alignment(
+            logits=outputs.logits,
+            input_ids=inputs["input_ids"],
+            word_lists=word_lists,
+            timestamp_token_id=model.config.timestamp_token_id,
+        )[0]
+
+        aligned_text = [
+            {
+                "start_time": item["start_time"],
+                "end_time": item["end_time"],
+                "word": " " + item["text"],
+            }
+            for item in timestamps
+        ]
+        return aligned_text
+
+    return align
 
 
 def add_aligned_units(example: Dict[str, Any]) -> Dict[str, Any]:

@@ -4,10 +4,11 @@ import torch
 from datasets import concatenate_datasets, load_dataset
 from deepspeed.utils.tensor_fragment import fragment_address
 from omegaconf import OmegaConf
-from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
+from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, Trainer, TrainingArguments
 
 from .data.utils import get_collator
 from .trainer import SpeechLMTrainer
+from .utils import OPTForSpeechLMConfig, SpeechLMTokenizerFast
 
 torch.serialization.add_safe_globals(
     [
@@ -40,6 +41,13 @@ def train(config):
     for unit in units:
         assert unit not in vocab
     tokenizer.add_tokens(units)
+
+    # Generation config
+    speech_token_ids = tokenizer.convert_tokens_to_ids(units)
+    speech_token_ids = set(speech_token_ids + [tokenizer.eos_token_id])
+    bad_words_ids = [[token_id] for token_id in range(len(tokenizer)) if token_id not in speech_token_ids]
+    config = GenerationConfig(max_length=128, do_sample=True, temperature=0.8, bad_words_ids=bad_words_ids)
+    # config.push_to_hub("ryota-komatsu/")
 
     # Datasets
     librilight = load_dataset(config.dataset.name, "Libri-Light", split="train", keep_in_memory=True)

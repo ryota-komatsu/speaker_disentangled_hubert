@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #$ -cwd                      ## Execute a job in the current directory
-#$ -l node_f=2               ## Use number of node
-#$ -l h_rt=24:00:00          ## Running job time
+#$ -l node_h=1               ## Use number of node
+#$ -l h_rt=12:00:00          ## Running job time
 #$ -j y                      ## Integrate standard error output into a standard output
 #$ -p -5
 #$ -m abe

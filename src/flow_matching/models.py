@@ -722,7 +722,7 @@ class FlowMatchingWithBigVGan(PreTrainedModel):
 
     def __init__(self, config: FlowMatchingWithBigVGanConfig):
         super().__init__(config)
-        self.model = FlowMatchingModel(config.model_config)
+        self.model = FlowMatchingModelV2(config.model_config)
         self.vocoder = BigVGan(config.vocoder_config)
 
         self.post_init()
@@ -738,7 +738,7 @@ class FlowMatchingWithBigVGan(PreTrainedModel):
         config = FlowMatchingWithBigVGanConfig(model_config.to_dict(), vocoder_config.to_dict())
 
         model = cls(config)
-        model.model = FlowMatchingModel.from_pretrained(model_path)
+        model.model = FlowMatchingModelV2.from_pretrained(model_path)
         model.vocoder = BigVGan.from_pretrained(vocoder_path)
         return model
 
