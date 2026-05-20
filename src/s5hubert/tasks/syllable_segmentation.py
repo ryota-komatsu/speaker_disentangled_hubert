@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from ..models.s5hubert import S5HubertForSyllableDiscovery
 from ..models.sylreg import SylRegForSyllableDiscovery
-from ..utils.data import LibriSpeech
+from ..utils.data import LibriSpeech, shard
 from ..utils.mincut import parallel_mincut
 
 
@@ -93,7 +93,7 @@ def _syllable_segmentation(config):
         )
 
 
-def syllable_segmentation(config):
+def syllable_segmentation(config, num_shards: int = 1, shard_index: int = 0):
     if config.model.model_type.startswith("s5hubert"):
         model = S5HubertForSyllableDiscovery.from_pretrained(
             config.path.checkpoint,
@@ -117,6 +117,7 @@ def syllable_segmentation(config):
             LibriSpeech(root=config.dataset.root, url="test-other", max_sample_size=None, perturb=False),
         ]
     )
+    dataset = shard(dataset, num_shards, shard_index)
     dataloader = torch.utils.data.DataLoader(dataset, collate_fn=LibriSpeech.collate_fn)
 
     segment_dir = Path(config.path.segment_dir)

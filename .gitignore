@@ -1,12 +1,10 @@
 .vscode
 __pycache__
-src/NeMo
 src/sdhubert
 src/sylber
 src/SyllableLM
 src/textlesslib
 src/utmos
-src/vghubert
 results
 runs
 segments

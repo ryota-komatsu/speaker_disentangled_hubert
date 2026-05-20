@@ -12,6 +12,14 @@ from torch.nn.utils.rnn import pad_sequence
 from .nansy import _load_waveform, change_gender, random_eq
 
 
+def shard(dataset, num_shards: int, index: int):
+    div, mod = divmod(len(dataset), num_shards)
+    start = div * index + min(index, mod)
+    end = start + div + (1 if index < mod else 0)
+    indices = range(start, end)
+    return torch.utils.data.Subset(dataset, indices)
+
+
 class LibriSpeech(torchaudio.datasets.LIBRISPEECH):
     def __init__(
         self,

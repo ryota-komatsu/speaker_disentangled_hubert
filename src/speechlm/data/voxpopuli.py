@@ -22,11 +22,7 @@ def get_map_fn(model_name_or_path: str = "ryota-komatsu/SylReg-Distill"):
     return map_fn
 
 
-def tokenize_voxpopuli(
-    data_dir: str = "data/voxpopuli",
-    model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
-    num_proc: int = 6,
-):
+def tokenize_voxpopuli(model_name_or_path: str = "ryota-komatsu/SylReg-Distill", num_proc: int = 6):
     dataset = load_dataset("facebook/voxpopuli", "en", split="train", trust_remote_code=True, num_proc=num_proc)
     dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
     dataset = dataset.with_format("torch")

@@ -1,10 +1,10 @@
-# SylReg: Speaker-Disentangled Regression for Syllable Discovery
+# SylReg: Speaker-Disentangled Regression for Syllabic Tokenization
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org)
 [![colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ryota-komatsu/speaker_disentangled_hubert/blob/main/demo.ipynb)
 [![arXiv](https://img.shields.io/badge/arXiv-2409.10103-<COLOR>.svg?logo=arXiv)](https://arxiv.org/abs/2409.10103)
-[![model](https://img.shields.io/badge/%F0%9F%A4%97-Model-blue)](https://huggingface.co/collections/ryota-komatsu/speaker-disentangled-hubert-686dc45a8718d505aa696f76)
+[![model](https://img.shields.io/badge/%F0%9F%A4%97-Model-blue)](https://huggingface.co/collections/ryota-komatsu/sylreg)
 [![demo](https://img.shields.io/badge/Project-Page-blue)](https://ryota-komatsu.github.io/speaker_disentangled_hubert)
 
 This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT](https://arxiv.org/abs/2409.10103).
@@ -74,7 +74,7 @@ generated_speech = decoder(units.unsqueeze(0)).waveform.cpu()
 
 ![](docs/figures/model.png)
 
-You can download a pretrained model from [Hugging Face](https://huggingface.co/ryota-komatsu/s5-hubert).
+You can download a pretrained model from [Hugging Face](https://huggingface.co/collections/ryota-komatsu/sylreg).
 
 ## Data Preparation
 

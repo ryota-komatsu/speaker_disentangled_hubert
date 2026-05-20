@@ -85,7 +85,6 @@ def tokenize_librilight_(
     min_len_sec: int = 5,
     max_len_sec: int = 30,
 ):
-
     tgt_chunk_size = tgt_len_sec * 16000 + 80
     min_chunk_size = min_len_sec * 16000 + 80
     max_chunk_size = max_len_sec * 16000 + 80
@@ -170,7 +169,6 @@ def tokenize_librilight(
     num_shards: int = 1,
     shard_index: int = 0,
 ):
-
     data_files = [
         os.path.join(config.dataset.lh_dir, "libriheavy_cuts_small.jsonl.gz"),
         os.path.join(config.dataset.lh_dir, "libriheavy_cuts_medium.jsonl.gz"),

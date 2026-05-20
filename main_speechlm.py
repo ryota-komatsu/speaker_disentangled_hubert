@@ -50,14 +50,10 @@ class TaskRunner:
             max_len_sec,
         )
 
-    def tokenize_librispeech(
-        self,
-        data_dir: str = "data/LibriSpeech",
-        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
-    ):
+    def tokenize_librispeech(self, model_name_or_path: str = "ryota-komatsu/SylReg-Distill"):
         from src.speechlm.data.librispeech import tokenize_librispeech
 
-        tokenize_librispeech(data_dir, model_name_or_path)
+        tokenize_librispeech(model_name_or_path)
 
     def tokenize_peoples_speech_clean(
         self,
@@ -90,14 +86,10 @@ class TaskRunner:
 
         tokenize_tinystories(num_shards, shard_index, data_dir, model_name_or_path)
 
-    def tokenize_voxpopuli(
-        self,
-        data_dir: str = "data/voxpopuli",
-        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
-    ):
+    def tokenize_voxpopuli(self, model_name_or_path: str = "ryota-komatsu/SylReg-Distill"):
         from src.speechlm.data.voxpopuli import tokenize_voxpopuli
 
-        tokenize_voxpopuli(data_dir, model_name_or_path)
+        tokenize_voxpopuli(model_name_or_path)
 
     def tokenize_eval(self, config: str = "configs/speechlm/default.yaml"):
         from src.speechlm.data.utils import tokenize_eval

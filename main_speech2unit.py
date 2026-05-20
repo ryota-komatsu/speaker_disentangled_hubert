@@ -15,11 +15,16 @@ class TaskRunner:
         config = OmegaConf.load(config)
         finetune(config)
 
-    def syllable_segmentation(self, config: str = "configs/speech2unit/default.yaml"):
+    def syllable_segmentation(
+        self,
+        config: str = "configs/speech2unit/default.yaml",
+        num_shards: int = 1,
+        shard_index: int = 0,
+    ):
         from src.s5hubert.tasks.syllable_segmentation import syllable_segmentation
 
         config = OmegaConf.load(config)
-        syllable_segmentation(config)
+        syllable_segmentation(config, num_shards, shard_index)
 
     def quantize(self, config: str = "configs/speech2unit/default.yaml"):
         from src.s5hubert.tasks.quantize import quantize
