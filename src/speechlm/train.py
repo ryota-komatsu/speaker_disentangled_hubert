@@ -50,12 +50,12 @@ def train(config):
     # config.push_to_hub("ryota-komatsu/")
 
     # Datasets
-    librilight = load_dataset(config.dataset.name, "Libri-Light", split="train", keep_in_memory=True)
-    libriheavy = load_dataset(config.dataset.name, "libriheavy", split="train", keep_in_memory=True)
-    librispeech = load_dataset(config.dataset.name, "LibriSpeech", split="train", keep_in_memory=True)
-    tinystories = load_dataset(config.dataset.name, "TinyStories", split="train", keep_in_memory=True)
-    peoples_speech = load_dataset(config.dataset.name, "peoples_speech", split="train", keep_in_memory=True)
-    voxpopuli = load_dataset(config.dataset.name, "voxpopuli", split="train", keep_in_memory=True)
+    librilight = load_dataset(config.dataset.name, "Libri-Light", split="train", keep_in_memory=True, num_proc=6)
+    libriheavy = load_dataset(config.dataset.name, "libriheavy", split="train", keep_in_memory=True, num_proc=6)
+    librispeech = load_dataset(config.dataset.name, "LibriSpeech", split="train", keep_in_memory=True, num_proc=6)
+    tinystories = load_dataset(config.dataset.name, "TinyStories", split="train", keep_in_memory=True, num_proc=6)
+    peoples_speech = load_dataset(config.dataset.name, "peoples_speech", split="train", keep_in_memory=True, num_proc=6)
+    voxpopuli = load_dataset(config.dataset.name, "voxpopuli", split="train", keep_in_memory=True, num_proc=6)
 
     train_dataset = concatenate_datasets(
         [
@@ -84,7 +84,7 @@ def train(config):
 
     # Model
     model = AutoModelForCausalLM.from_pretrained(config.model_args.name)
-    model.resize_token_embeddings(len(tokenizer), mean_resizing=config.model_args.mean_resizing)
+    model.resize_token_embeddings(len(tokenizer), mean_resizing=False)
 
     trainer = Trainer(
         model=model,

@@ -19,6 +19,7 @@ matplotlib==3.8.4
 nltk
 numpy==1.26.4
 pandas==2.2.2
+peft
 praat-parselmouth==0.4.6
 scikit-learn==1.5.0
 scipy==1.13.1
@@ -28,3 +29,4 @@ timm
 torch==2.5.1+cu124
 torchaudio==2.5.1+cu124
 transformers @ git+https://github.com/mbtariq82/transformers.git@qwen3-asr
+trl

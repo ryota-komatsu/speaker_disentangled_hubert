@@ -9,7 +9,6 @@ dataset:
 
 model_args:
   name: ""
-  mean_resizing: false
   defrost_steps: 5000
 
 training_args:
@@ -38,6 +37,8 @@ training_args:
   optim: "adamw_torch_fused"
   ddp_find_unused_parameters: false
   resume_from_checkpoint: null
+  # assistant_only_loss: true
+  # loss_type: "dft"
 
 speech2unit:
   model_name_or_path: "ryota-komatsu/SylReg-Distill"

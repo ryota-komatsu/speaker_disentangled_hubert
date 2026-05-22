@@ -107,6 +107,14 @@ class TaskRunner:
 
         train(config)
 
+    def finetune(self, config: str = "configs/speechlm/default.yaml"):
+        config = OmegaConf.load(config)
+        os.environ["HF_HOME"] = str(Path(config.dataset.HF_HOME).expanduser())
+
+        from src.speechlm.finetune import finetune
+
+        finetune(config)
+
     def evaluate(self, config: str = "configs/speechlm/default.yaml"):
         config = OmegaConf.load(config)
         os.environ["HF_HOME"] = str(Path(config.dataset.HF_HOME).expanduser())

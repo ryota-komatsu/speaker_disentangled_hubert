@@ -9,22 +9,7 @@
 
 This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT](https://arxiv.org/abs/2409.10103).
 
-## Setup
-
-```shell
-sudo apt install git-lfs  # for UTMOS
-
-# fairseq does not support python 3.11+
-# omegaconf 2.0.6 has a non-standard dependency specifier PyYAML>=5.1.*. pip 24.1 will enforce this behaviour change.
-# pin to setuptools=81.0.0 See https://github.com/tensorflow/tensorboard/issues/7003
-conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2
-conda activate py310
-pip install -r requirements/requirements.txt
-
-sh scripts/setup.sh
-```
-
-## Usage: encoding waveforms into pseudo-syllabic units
+## Usage: Tokenize speech into syllabic tokens
 
 ![](docs/figures/usage.png)
 
@@ -72,9 +57,22 @@ generated_speech = decoder(units.unsqueeze(0)).waveform.cpu()
 
 ## Models
 
-![](docs/figures/model.png)
-
 You can download a pretrained model from [Hugging Face](https://huggingface.co/collections/ryota-komatsu/sylreg).
+
+## Setup
+
+```shell
+sudo apt install git-lfs  # for UTMOS
+
+# fairseq does not support python 3.11+
+# omegaconf 2.0.6 has a non-standard dependency specifier PyYAML>=5.1.*. pip 24.1 will enforce this behaviour change.
+# pin to setuptools=81.0.0 See https://github.com/tensorflow/tensorboard/issues/7003
+conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2
+conda activate py310
+pip install -r requirements/requirements.txt
+
+sh scripts/setup.sh
+```
 
 ## Data Preparation
 
@@ -113,15 +111,11 @@ dataset.root in a config file
 ## Syllable discovery
 
 ```shell
-tmux new -s py310
 accelerate launch \
   --config_file=configs/speech2unit/ddp.yaml \
   --main_process_ip= \
   --machine_rank= \
   main_speech2unit.py train
-Ctrl + b
-d  # detach
-tmux a -t py310  # attach
 ```
 
 To run only a sub-task (train, syllable_segmentation, quantize, or evaluate), specify it as an argument.

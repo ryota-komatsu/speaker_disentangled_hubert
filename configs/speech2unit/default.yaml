@@ -33,7 +33,7 @@ model:
 
 training_args:
   output_dir: "models/s5-hubert"
-  per_device_train_batch_size: 256
+  per_device_train_batch_size: 512
   gradient_accumulation_steps: 1
   learning_rate: 0.0001
   weight_decay: 0.01
