@@ -4,8 +4,8 @@ import numpy as np
 import torch
 from transformers import PreTrainedModel
 
-from ..utils.mincut import mincut_torch
-from ..utils.misc import fix_random_seed
+from .mincut import mincut_torch
+from .modules import fix_random_seed
 
 
 class SylRegForSyllableDiscovery(PreTrainedModel):

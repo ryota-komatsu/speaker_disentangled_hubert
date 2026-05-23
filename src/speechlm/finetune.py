@@ -12,7 +12,7 @@ from ..s5hubert import SylRegForSyllableDiscovery
 from .data.tinystories import oov_pattern
 
 
-def get_synthesizer(model_name_or_path):
+def get_synthesizer(model_name_or_path: str):
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
     pipeline = KPipeline(lang_code="a")
 
@@ -45,6 +45,33 @@ def get_synthesizer(model_name_or_path):
     return synthesize
 
 
+def get_dailytalk_tokenizer(model_name_or_path: str):
+    encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+
+    def tokenize(example):
+        messages = []
+        spoken_messages = []
+
+        for turn_idx, (text, audio_cut_idx) in enumerate(zip(example["texts"], example["audio_cut_idxs"], strict=True)):
+            input_values = example["audio"]["array"][audio_cut_idx[0] : audio_cut_idx[1]]
+            input_values = torchaudio.functional.resample(
+                input_values, example["audio"]["sampling_rate"], 16000
+            ).unsqueeze(0)
+
+            role = "user" if turn_idx % 2 == 0 else "assistant"
+            content = encoder(input_values.to(encoder.device))[0]["units"]
+
+            message = {"role": role, "content": "".join(f"<{unit}>" for unit in content)}
+            spoken_message = {"role": role, "content": text}
+
+            messages.append(message)
+            spoken_messages.append(spoken_message)
+
+        return {"messages": messages, "spoken_messages": spoken_messages}
+
+    return tokenize
+
+
 def data(config, num_proc: int = 6):
     dataset = load_dataset(
         "HuggingFaceTB/smoltalk2", "SFT", split="smoltalk_smollm3_everyday_conversations_no_think", num_proc=num_proc
@@ -55,17 +82,29 @@ def data(config, num_proc: int = 6):
     )
     dataset = dataset.map(get_synthesizer(config.speech2unit.model_name_or_path))
     dataset = dataset.cast_column("audio", Audio())
-    dataset.push_to_hub(config.dataset.name, split="train")
+    dataset.push_to_hub(config.dataset.name, "smoltalk2", split="train")
+
+    dataset = load_dataset("eustlb/dailytalk-conversations-grouped", split="train", num_proc=num_proc)
+    dataset = dataset.with_format("torch")
+    dataset = dataset.map(
+        get_dailytalk_tokenizer(config.speech2unit.model_name_or_path),
+        remove_columns=["conversation_id", "speaker_ids", "turn_ids", "texts", "audio_cut_idxs", "conversation"],
+    )
+    dataset.push_to_hub(config.dataset.name, "dailytalk", split="train")
 
 
 def finetune(config):
     args = SFTConfig(**OmegaConf.to_container(config.training_args))
 
-    train_dataset = load_dataset(config.dataset.name, split="train")
+    smoltalk2 = load_dataset(config.dataset.name, "smoltalk2", split="train")
+    dailytalk = load_dataset(config.dataset.name, "dailytalk", split="train")
+
     train_dataset = concatenate_datasets(
         [
-            train_dataset,
-            train_dataset.remove_columns("messages").rename_column("spoken_messages", "messages"),
+            smoltalk2,
+            dailytalk,
+            smoltalk2.remove_columns("messages").rename_column("spoken_messages", "messages"),
+            dailytalk.remove_columns("messages").rename_column("spoken_messages", "messages"),
         ]
     )
 

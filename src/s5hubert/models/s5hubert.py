@@ -25,9 +25,8 @@ from transformers import AutoConfig, AutoModel
 from transformers.models.hubert.modeling_hubert import HubertModel, HubertPreTrainedModel
 from transformers.utils import ModelOutput
 
-from ..utils.mincut import mincut_torch
-from ..utils.misc import fix_random_seed
-from .modules import MLP
+from .mincut import mincut_torch
+from .modules import MLP, fix_random_seed
 
 
 class S5Hubert(nn.Module):

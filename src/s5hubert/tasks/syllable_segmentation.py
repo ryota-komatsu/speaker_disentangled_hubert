@@ -7,10 +7,10 @@ import torchaudio
 from torch.utils.data import ConcatDataset
 from tqdm import tqdm
 
+from ..models.mincut import parallel_mincut
 from ..models.s5hubert import S5HubertForSyllableDiscovery
 from ..models.sylreg import SylRegForSyllableDiscovery
 from ..utils.data import LibriSpeech, shard
-from ..utils.mincut import parallel_mincut
 
 
 def _syllable_segmentation(config):

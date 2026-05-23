@@ -9,7 +9,7 @@ import torch
 import torchaudio
 
 from ...sdhubert.utils.syllable import BoundaryDetectionEvaluator, match_cluster
-from ..utils.misc import compute_cluster_purity, compute_mutual_info, compute_syllable_purity
+from ..utils.misc import compute_cluster_purity, compute_mutual_info, compute_syllable_purity, compute_ued
 
 
 def evaluate(config):
@@ -98,6 +98,7 @@ def evaluate(config):
         "segmentation": segmentation_results,
         "clustering": clustering_results,
         "unit_frequency": unit_frequency,
+        # "unit_edit_dist": compute_ued(config),
     }
 
     def round_float(results, ndigits: int = 3):

@@ -8,7 +8,7 @@ import torchaudio
 from transformers import HubertModel
 
 from ...sdhubert.utils.syllable import BoundaryDetectionEvaluator
-from ..utils.mincut import parallel_mincut
+from ..models.mincut import parallel_mincut
 
 plt.rcParams["pdf.fonttype"] = 42
 plt.rcParams["ps.fonttype"] = 42

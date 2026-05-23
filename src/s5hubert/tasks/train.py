@@ -8,10 +8,10 @@ from omegaconf import OmegaConf
 from transformers import Trainer, TrainerCallback, TrainingArguments
 
 from ...sdhubert.utils.syllable import BoundaryDetectionEvaluator
+from ..models.mincut import parallel_mincut
 from ..models.s5hubert import S5Hubert, S5HubertForSelfSegmentation
 from ..models.s5hubert_dino import S5HubertDino
 from ..utils.data import LibriLight, LibriSpeech
-from ..utils.mincut import parallel_mincut
 
 
 class EMACallback(TrainerCallback):

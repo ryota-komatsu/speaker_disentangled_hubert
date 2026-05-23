@@ -14,9 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import random
+
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
+
+
+def fix_random_seed(seed=0):
+    random.seed(seed)
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def init_module(m: nn.Module):
