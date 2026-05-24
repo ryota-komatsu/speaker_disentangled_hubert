@@ -49,6 +49,7 @@ training_args:
   dataloader_num_workers: 6
   remove_unused_columns: false
   optim: "adamw_torch_fused"
+  report_to: "tensorboard"
   ddp_find_unused_parameters: true
   resume_from_checkpoint: null
 

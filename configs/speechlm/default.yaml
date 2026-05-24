@@ -35,6 +35,7 @@ training_args:
   remove_unused_columns: false
   deepspeed: "configs/speechlm/ds_zero2_bf16.json"
   optim: "adamw_torch_fused"
+  report_to: "tensorboard"
   ddp_find_unused_parameters: false
   resume_from_checkpoint: null
   # assistant_only_loss: true

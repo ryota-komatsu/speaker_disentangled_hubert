@@ -31,6 +31,7 @@ flow_matching:
     dataloader_num_workers: 16
     remove_unused_columns: false
     optim: "adamw_torch_fused"
+    report_to: "tensorboard"
     ddp_find_unused_parameters: false
     resume_from_checkpoint: null
 
@@ -48,6 +49,7 @@ flow_matching:
     bf16: true
     remove_unused_columns: false
     optim: "adamw_torch_fused"
+    report_to: "tensorboard"
     ddp_find_unused_parameters: false
     resume_from_checkpoint: "models/flow_matching/checkpoint-200000"
 
