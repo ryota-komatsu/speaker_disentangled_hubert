@@ -80,7 +80,9 @@ def data(config, num_proc: int = 6):
         lambda example: not oov_pattern.search("".join(message["content"] for message in example["messages"])),
         num_proc=num_proc,
     )
-    dataset = dataset.map(get_synthesizer(config.speech2unit.model_name_or_path))
+    dataset = dataset.map(
+        get_synthesizer(config.speech2unit.model_name_or_path), remove_columns=["chat_template_kwargs"]
+    )
     dataset = dataset.cast_column("audio", Audio())
     dataset.push_to_hub(config.dataset.name, "smoltalk2", split="train")
 
@@ -90,14 +92,15 @@ def data(config, num_proc: int = 6):
         get_dailytalk_tokenizer(config.speech2unit.model_name_or_path),
         remove_columns=["conversation_id", "speaker_ids", "turn_ids", "texts", "audio_cut_idxs", "conversation"],
     )
+    dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
     dataset.push_to_hub(config.dataset.name, "dailytalk", split="train")
 
 
 def finetune(config):
     args = SFTConfig(**OmegaConf.to_container(config.training_args))
 
-    smoltalk2 = load_dataset(config.dataset.name, "smoltalk2", split="train")
-    dailytalk = load_dataset(config.dataset.name, "dailytalk", split="train")
+    smoltalk2 = load_dataset(config.dataset.name, "smoltalk2", split="train").remove_columns("audio")
+    dailytalk = load_dataset(config.dataset.name, "dailytalk", split="train").remove_columns("audio")
 
     train_dataset = concatenate_datasets(
         [

@@ -79,9 +79,9 @@ def evaluate(config):
     H = -np.sum(p_syllable * np.log(p_syllable))
 
     clustering_results = {
-        "syllable_purity": compute_syllable_purity(p_xy),
-        "cluster_purity": compute_cluster_purity(p_xy),
-        "syllable_normalized_mutual_info": compute_mutual_info(p_xy) / H,
+        "syllable_purity": compute_syllable_purity(p_xy) * 100,
+        "cluster_purity": compute_cluster_purity(p_xy) * 100,
+        "syllable_normalized_mutual_info": compute_mutual_info(p_xy) / H * 100,
     }
 
     segmentation_results = BoundaryDetectionEvaluator(
@@ -92,12 +92,17 @@ def evaluate(config):
         max_val_num=None,
     ).evaluate()
 
-    unit_frequency = num_units / total_seconds
+    token_frame_rate = num_units / total_seconds
 
     results = {
-        "segmentation": segmentation_results,
+        "segmentation": {
+            "Pr": segmentation_results["prec"] * 100,
+            "Re": segmentation_results["recall"] * 100,
+            "F1": segmentation_results["f1"] * 100,
+            "R": segmentation_results["r_val"] * 100,
+        },
         "clustering": clustering_results,
-        "unit_frequency": unit_frequency,
+        "token_frame_rate": token_frame_rate,
         # "unit_edit_dist": compute_ued(config),
     }
 

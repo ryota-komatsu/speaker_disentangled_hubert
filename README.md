@@ -9,6 +9,8 @@
 
 This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT](https://arxiv.org/abs/2409.10103).
 
+![](docs/figures/results.png)
+
 ## Usage: Tokenize speech into syllabic tokens
 
 ![](docs/figures/usage.png)
@@ -40,7 +42,7 @@ outputs = encoder(waveform.to(encoder.device))
 units = outputs[0]["units"]  # [3950, 67, ..., 503]
 
 # speech language modeling
-text = "".join(f"<{unit}>" for unit in units)
+text = "".join(f"<{unit}>" for unit in units[:-1])
 input_ids = tokenizer(text, padding=True, return_tensors="pt").input_ids.to(speechlm.device)
 generated_ids = speechlm.generate(input_ids=input_ids, do_sample=True, temperature=0.8)[0]
 units = tokenizer.decode(generated_ids)
@@ -54,6 +56,7 @@ generated_speech = decoder(units.unsqueeze(0)).waveform.cpu()
 
 - Speech resynthesis examples can be heard on the [project page](https://ryota-komatsu.github.io/speaker_disentangled_hubert).
 - Google Colab demo is found [here](https://colab.research.google.com/github/ryota-komatsu/speaker_disentangled_hubert/blob/main/demo.ipynb).
+- Local gradio demo: `python app.py`
 
 ## Models
 

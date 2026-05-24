@@ -178,4 +178,5 @@ def evaluate(config):
         "perplexity": np.float64(generation["nll"].mean().exp().item()),
         "auto-bleu": np.float64(generation["auto-bleu"].mean().item()),
     }
+    Path(config.training_args.output_dir).mkdir(parents=True, exist_ok=True)
     pd.DataFrame.from_dict(results, orient="index").to_csv(Path(config.training_args.output_dir) / "score_test.csv")

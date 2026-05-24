@@ -39,6 +39,7 @@ training_args:
   resume_from_checkpoint: null
   # assistant_only_loss: true
   # loss_type: "dft"
+  # eos_token: "<|im_end|>"
 
 speech2unit:
   model_name_or_path: "ryota-komatsu/SylReg-Distill"

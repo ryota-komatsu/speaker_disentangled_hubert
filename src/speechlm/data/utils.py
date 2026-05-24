@@ -114,7 +114,7 @@ def tokenize_storycloze(encoder, SC_dir):
             },
             "units": {
                 "pos": pos_outputs[0]["units"].tolist(),
-                "neg": neg_outputs[1]["units"].tolist(),
+                "neg": neg_outputs[0]["units"].tolist(),
             },
             "text": {
                 "pos": pos_text,
