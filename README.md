@@ -42,9 +42,19 @@ outputs = encoder(waveform.to(encoder.device))
 units = outputs[0]["units"]  # [3950, 67, ..., 503]
 
 # speech language modeling
-text = "".join(f"<{unit}>" for unit in units[:-1])
-input_ids = tokenizer(text, padding=True, return_tensors="pt").input_ids.to(speechlm.device)
+messages = [
+    {"role": "user", "content": "".join(f"<{unit}>" for unit in units)},
+]
+
+input_ids = tokenizer.apply_chat_template(
+    messages,
+    tokenize=True,
+    add_generation_prompt=True,
+    return_tensors="pt",
+).input_ids.to(speechlm.device)
+
 generated_ids = speechlm.generate(input_ids=input_ids, do_sample=True, temperature=0.8)[0]
+
 units = tokenizer.decode(generated_ids)
 units = torch.tensor([int(unit) for unit in re.findall(r"<(\d+)>", units)], device=decoder.device)
 

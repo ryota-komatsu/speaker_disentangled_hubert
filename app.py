@@ -48,16 +48,24 @@ def main(audio: str, temperature: float):
     # load a waveform
     input_values, sr = torchaudio.load(audio)
     input_values = torchaudio.functional.resample(input_values, sr, 16000)
-    input_values = librosa.effects.trim(input_values.numpy(), top_db=20)[0]
-    input_values = torch.from_numpy(input_values)
 
     # encode a waveform into syllabic units
     units = encoder(input_values.to(encoder.device))[0]["units"]  # [3950, 67, ..., 503]
 
     # speech language modeling
-    text = "".join(f"<{unit}>" for unit in units)
-    input_ids = tokenizer(text, padding=True, return_tensors="pt").input_ids.to(speechlm.device)
+    messages = [
+        {"role": "user", "content": "".join(f"<{unit}>" for unit in units)},
+    ]
+
+    input_ids = tokenizer.apply_chat_template(
+        messages,
+        tokenize=True,
+        add_generation_prompt=True,
+        return_tensors="pt",
+    ).input_ids.to(speechlm.device)
+
     generated_ids = speechlm.generate(input_ids=input_ids, do_sample=True, temperature=temperature)[0]
+
     units = tokenizer.decode(generated_ids)
     units = torch.tensor([int(unit) for unit in re.findall(r"<(\d+)>", units)], device=decoder.device)
 

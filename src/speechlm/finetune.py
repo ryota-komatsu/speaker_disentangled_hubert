@@ -6,7 +6,7 @@ import torchaudio
 from datasets import Audio, concatenate_datasets, load_dataset
 from kokoro import KPipeline
 from omegaconf import OmegaConf
-from peft import LoraConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import SFTConfig, SFTTrainer
 
 from ..s5hubert import SylRegForSyllableDiscovery
@@ -132,10 +132,26 @@ def finetune(config):
         ]
     )
 
+    # Tokenizer
+    tokenizer = AutoTokenizer.from_pretrained(config.model_args.name, eos_token="<|im_end|>")
+    im_token_ids = tokenizer.convert_tokens_to_ids(["<|im_start|>", "<|im_end|>"])
+
+    def grad_hook(grad):
+        masked_grad = torch.zeros_like(grad)
+        masked_grad[im_token_ids] = grad[im_token_ids]
+        return masked_grad
+
+    # Model
+    model = AutoModelForCausalLM.from_pretrained(config.model_args.name, eos_token_id=151645)
+    model.model.layers.requires_grad_(False)
+    model.model.norm.requires_grad_(False)
+    handle_input_embeddings = model.get_input_embeddings().weight.register_hook(grad_hook)
+    handle_output_embeddings = model.get_output_embeddings().weight.register_hook(grad_hook)
+
     trainer = SFTTrainer(
-        model=config.model_args.name,
+        model=model,
         args=args,
         train_dataset=train_dataset,
-        peft_config=LoraConfig(),
+        processing_class=tokenizer,
     )
     trainer.train()
