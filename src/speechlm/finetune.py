@@ -1,5 +1,6 @@
 import random
 
+import librosa
 import torch
 import torchaudio
 from datasets import Audio, concatenate_datasets, load_dataset
@@ -28,6 +29,8 @@ def get_synthesizer(model_name_or_path: str):
             generator = pipeline(message["content"], voice=voice)
 
             input_values = torch.cat([input_values for _, (gs, _, input_values) in enumerate(generator)])
+            input_values = librosa.effects.trim(input_values.numpy(), top_db=20)[0]
+            input_values = torch.from_numpy(input_values)
             input_values = torchaudio.functional.resample(input_values, 24000, 16000)
             audio.append(input_values)
 

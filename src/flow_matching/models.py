@@ -755,4 +755,4 @@ class FlowMatchingWithBigVGan(PreTrainedModel):
         """
         outputs = self.model.sample(input_ids)
         waveform = self.vocoder(outputs.spectrogram)
-        return ModelOutput(waveform=waveform)
+        return ModelOutput(waveform=waveform, durations=outputs.durations)

@@ -1,6 +1,8 @@
 import re
 
 import gradio as gr
+import librosa
+import matplotlib.pyplot as plt
 import torch
 import torchaudio
 from transformers import (
@@ -39,43 +41,65 @@ pipe = pipeline(
     dtype=dtype,
 )
 
+transform = torchaudio.transforms.MelSpectrogram(hop_length=320, n_mels=80, center=False).to(device)
 
-def main(audio: str):
+
+def main(audio: str, temperature: float):
     # load a waveform
-    waveform, sr = torchaudio.load(audio)
-    waveform = torchaudio.functional.resample(waveform, sr, 16000)
+    input_values, sr = torchaudio.load(audio)
+    input_values = torchaudio.functional.resample(input_values, sr, 16000)
+    input_values = librosa.effects.trim(input_values.numpy(), top_db=20)[0]
+    input_values = torch.from_numpy(input_values)
 
     # encode a waveform into syllabic units
-    units = encoder(waveform.to(encoder.device))[0]["units"]  # [3950, 67, ..., 503]
+    units = encoder(input_values.to(encoder.device))[0]["units"]  # [3950, 67, ..., 503]
 
     # speech language modeling
-    text = "".join(f"<{unit}>" for unit in units[:-1])
+    text = "".join(f"<{unit}>" for unit in units)
     input_ids = tokenizer(text, padding=True, return_tensors="pt").input_ids.to(speechlm.device)
-    generated_ids = speechlm.generate(input_ids=input_ids, do_sample=True, temperature=0.8)[0]
+    generated_ids = speechlm.generate(input_ids=input_ids, do_sample=True, temperature=temperature)[0]
     units = tokenizer.decode(generated_ids)
     units = torch.tensor([int(unit) for unit in re.findall(r"<(\d+)>", units)], device=decoder.device)
 
     # unit-to-speech synthesis
     outputs = decoder(units.unsqueeze(0))
     generated_speech = outputs.waveform.squeeze(0).cpu().numpy()
+    boundaries = outputs.durations.squeeze(0).cumsum(0).cpu()
 
+    # Transcript
     generated_text = pipe(generated_speech, generate_kwargs={"language": "english"}, return_timestamps=True)["text"]
 
-    return (16000, generated_speech), generated_text
+    spectrogram = transform(outputs.waveform.squeeze(0))
+    spectrogram = torch.log(torch.clamp(spectrogram, min=1e-5))
+    spectrogram = spectrogram.cpu().numpy()
+
+    ticks = torch.cat([torch.tensor([0]), boundaries])
+    ticks = (ticks[1:] + ticks[:-1]) // 2
+
+    plt.figure(figsize=[25.6, 4.8])
+    plt.imshow(spectrogram)
+    plt.vlines(boundaries.numpy()[:-1], 0, 79, colors="red")
+    plt.xticks(ticks=ticks, labels=[str(unit) for unit in units.tolist()], rotation=270, fontsize=10)
+    plt.yticks([], [])
+    plt.savefig("spectrogram.png", bbox_inches="tight")
+
+    return (16000, generated_speech), generated_text, "spectrogram.png"
 
 
 if __name__ == "__main__":
-    with gr.Blocks(title="Speech Resynthesis") as demo:
+    with gr.Blocks(title="Speech Continuation") as demo:
         with gr.Row():
             audio_in = gr.Audio(type="filepath", label="Original speech")
 
-        with gr.Row():
+        with gr.Column():
+            temperature = gr.Slider(minimum=0.1, maximum=1.0, value=0.8, step=0.1, label="Temperature")
+
+        with gr.Column():
             btn = gr.Button("Generate")
             audio_out = gr.Audio(label="Generated speech", streaming=True, autoplay=True)
-
-        with gr.Row():
             text_out = gr.Textbox(label="Transcript")
+            plot_out = gr.Image(type="filepath", label="Syllabic tokenization")
 
-        btn.click(main, inputs=audio_in, outputs=[audio_out, text_out])
+        btn.click(main, inputs=[audio_in, temperature], outputs=[audio_out, text_out, plot_out])
 
     demo.launch()
