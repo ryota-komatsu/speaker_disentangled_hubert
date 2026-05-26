@@ -134,11 +134,11 @@ def finetune(config):
 
     # Tokenizer
     tokenizer = AutoTokenizer.from_pretrained(config.model_args.name, eos_token="<|im_end|>")
-    im_token_ids = tokenizer.convert_tokens_to_ids(["<|im_start|>", "<|im_end|>"])
+    chatml_token_ids = tokenizer.convert_tokens_to_ids(["<|im_start|>", "<|im_end|>"])
 
     def grad_hook(grad):
         masked_grad = torch.zeros_like(grad)
-        masked_grad[im_token_ids] = grad[im_token_ids]
+        masked_grad[chatml_token_ids] = grad[chatml_token_ids]
         return masked_grad
 
     # Model

@@ -397,6 +397,7 @@ class RotaryEmbedding(nn.Module):
 
 class FlowMatchingModel(PreTrainedModel):
     config_class = FlowMatchingConfig
+    base_model_prefix = "model"
 
     def __init__(self, config: FlowMatchingConfig):
         super().__init__(config)
@@ -544,6 +545,7 @@ class FlowMatchingModel(PreTrainedModel):
 
 class FlowMatchingModelV2(PreTrainedModel):
     config_class = FlowMatchingConfig
+    base_model_prefix = "model"
 
     def __init__(self, config: FlowMatchingConfig):
         super().__init__(config)
@@ -563,6 +565,12 @@ class FlowMatchingModelV2(PreTrainedModel):
         self.duration_predictor = FlowMatchingDurationPredictor(config)
 
         self.post_init()
+
+    def freeze_encoder(self):
+        self.time_cond_mlp.requires_grad_(False)
+        self.embed_tokens.requires_grad_(False)
+        self.encoder_layers.requires_grad_(False)
+        self.duration_predictor.requires_grad_(False)
 
     def forward(
         self,

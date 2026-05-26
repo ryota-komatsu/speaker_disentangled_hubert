@@ -44,13 +44,17 @@ pipe = pipeline(
 transform = torchaudio.transforms.MelSpectrogram(hop_length=320, n_mels=80, center=False).to(device)
 
 
+@torch.inference_mode()
 def main(audio: str, temperature: float):
     # load a waveform
     input_values, sr = torchaudio.load(audio)
     input_values = torchaudio.functional.resample(input_values, sr, 16000)
+    input_values = librosa.effects.trim(input_values.numpy(), top_db=30)[0]
+    input_values = torch.from_numpy(input_values)
 
     # encode a waveform into syllabic units
     units = encoder(input_values.to(encoder.device))[0]["units"]  # [3950, 67, ..., 503]
+    input_len = len(units)
 
     # speech language modeling
     messages = [
@@ -68,6 +72,7 @@ def main(audio: str, temperature: float):
 
     units = tokenizer.decode(generated_ids)
     units = torch.tensor([int(unit) for unit in re.findall(r"<(\d+)>", units)], device=decoder.device)
+    units = units[input_len:]
 
     # unit-to-speech synthesis
     outputs = decoder(units.unsqueeze(0))

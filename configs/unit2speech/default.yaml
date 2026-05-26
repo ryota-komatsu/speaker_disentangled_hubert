@@ -3,7 +3,7 @@ path:
 
 dataset:
   HF_HOME: "~/.cache/huggingface"
-  name: "ryota-komatsu/s5-hubert"  # https://huggingface.co/datasets
+  name: "ryota-komatsu/SylReg-Decoder"  # https://huggingface.co/datasets
   libritts_dir: "data/LibriTTS_R" # ${root}/train-clean-100, train-clean-360, ...
   hfc_dir: "data/hi-fi-captain/en-US"
 
@@ -45,6 +45,7 @@ flow_matching:
     adam_beta2: 0.95
     max_grad_norm: 0.1
     max_steps: 50
+    logging_steps: 10
     save_steps: 10
     bf16: true
     remove_unused_columns: false

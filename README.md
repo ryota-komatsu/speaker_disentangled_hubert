@@ -11,7 +11,7 @@ This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syll
 
 ![](docs/figures/results.png)
 
-## Usage: Tokenize speech into syllabic tokens
+## Usage: Syllabic tokenization for speech language models
 
 ![](docs/figures/usage.png)
 

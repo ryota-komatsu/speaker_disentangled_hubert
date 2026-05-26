@@ -125,6 +125,7 @@ def finetune_dit(config):
     train_dataset = train_dataset.with_format("torch")
 
     model = FlowMatchingModelV2.from_pretrained(config.flow_matching.finetuning_args.resume_from_checkpoint)
+    model.freeze_encoder()
 
     trainer = Trainer(
         model=model,

@@ -37,9 +37,11 @@ class TaskRunner:
         finetune_dit(config)
 
     def evaluate(self, config: str = "configs/unit2speech/default.yaml"):
+        config = OmegaConf.load(config)
+        os.environ["HF_HOME"] = str(Path(config.dataset.HF_HOME).expanduser())
+
         from src.flow_matching.eval import evaluate
 
-        config = OmegaConf.load(config)
         evaluate(config)
 
 
