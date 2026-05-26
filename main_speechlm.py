@@ -6,6 +6,17 @@ from omegaconf import OmegaConf
 
 
 class TaskRunner:
+    def tokenize_cosmopedia(
+        self,
+        num_shards: int = 1,
+        shard_index: int = 0,
+        data_dir: str = "data/cosmopedia",
+        model_name_or_path: str = "ryota-komatsu/SylReg-Distill",
+    ):
+        from src.speechlm.data.cosmopedia import tokenize_cosmopedia
+
+        tokenize_cosmopedia(num_shards, shard_index, data_dir, model_name_or_path)
+
     def tokenize_emilia(
         self,
         num_shards: int = 1,
@@ -38,9 +49,9 @@ class TaskRunner:
         min_len_sec: int = 5,
         max_len_sec: int = 30,
     ):
-        from src.speechlm.data.librilight import tokenize_librilight_
+        from src.speechlm.data.librilight import tokenize_librilight
 
-        tokenize_librilight_(
+        tokenize_librilight(
             num_shards,
             shard_index,
             data_dir,

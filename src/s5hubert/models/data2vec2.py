@@ -37,13 +37,13 @@ class Data2Vec2Config(PretrainedConfig):
     def __init__(
         self,
         _name="data2vec_multi",
-        depth=8,
+        depth=7,  # 8
         num_heads=12,
         norm_eps=1e-05,
         norm_affine=True,
-        encoder_dropout=0.1,
-        post_mlp_drop=0.1,
-        attention_dropout=0.1,
+        encoder_dropout=0.0,  # 0.1
+        post_mlp_drop=0.0,  # 0.1
+        attention_dropout=0.0,  # 0.1
         activation_dropout=0.0,
         dropout_input=0.0,
         embed_dim=768,
@@ -51,7 +51,7 @@ class Data2Vec2Config(PretrainedConfig):
         modalities={
             "audio": {
                 "prenet_depth": 4,
-                "prenet_dropout": 0.1,
+                "prenet_dropout": 0.0,  # 0.1
                 "use_alibi_encoder": True,
                 "learned_alibi_scale": False,
                 "num_alibi_heads": 12,
@@ -325,6 +325,7 @@ class AudioEncoder(nn.Module):
 
 class Data2VecMultiModel(PreTrainedModel):
     config_class = Data2Vec2Config
+    base_model_prefix = "model"
 
     def make_modality_encoder(
         self,
@@ -447,7 +448,7 @@ class Data2VecMultiModel(PreTrainedModel):
         self.modality_encoders["AUDIO"].requires_grad_(False)
 
         # Transformer
-        self.modality_encoders["AUDIO"].context_encoder.requires_grad_(False)
-        self.blocks.requires_grad_(False)
+        self.modality_encoders["AUDIO"].context_encoder.requires_grad_(True)
+        self.blocks.requires_grad_(True)
 
         self.modality_encoders["AUDIO"].alibi_scale.requires_grad_(False)

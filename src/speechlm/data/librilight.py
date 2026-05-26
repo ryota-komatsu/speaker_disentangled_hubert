@@ -76,7 +76,7 @@ def normalize_text(s: str) -> str:
     return s
 
 
-def tokenize_librilight_(
+def tokenize_librilight(
     num_shards: int = 1,
     shard_index: int = 0,
     data_dir: str = "data/librilight",
@@ -164,10 +164,11 @@ def tokenize_librilight_(
                 f.write("\n")
 
 
-def tokenize_librilight(
+def tokenize_libriheavy(
     config,
     num_shards: int = 1,
     shard_index: int = 0,
+    data_dir: str = "data/libriheavy",
 ):
     data_files = [
         os.path.join(config.dataset.lh_dir, "libriheavy_cuts_small.jsonl.gz"),
@@ -184,7 +185,9 @@ def tokenize_librilight(
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
 
-    with open(f"{config.dataset.manifest_prefix}{shard_index}.json", "w") as f:
+    manifest_path = Path(data_dir) / f"manifest{shard_index}.json"
+
+    with open(manifest_path, "w") as f:
         for example in tqdm(dataset):
             load_path = os.path.join(config.dataset.ll_dir, example["recording"]["id"] + config.dataset.ext_audio)
             save_path = os.path.join(config.dataset.lh_dir, example["id"] + config.dataset.ext_audio)

@@ -146,6 +146,7 @@ class BigVGan(PreTrainedModel):
     """
 
     config_class = BigVGanConfig
+    base_model_prefix = "vocoder"
 
     def __init__(self, config: BigVGanConfig):
         super().__init__(config)

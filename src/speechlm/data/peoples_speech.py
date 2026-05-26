@@ -1,10 +1,22 @@
 import json
 from pathlib import Path
 
+from better_profanity import profanity
 from datasets import Audio, load_dataset
 from tqdm import tqdm
 
 from ...s5hubert import SylRegForSyllableDiscovery
+from .utils import filler_pattern1, filler_pattern2, repeat_pattern1, repeat_pattern2
+
+
+def filter_fn(example: dict):
+    return (
+        profanity.contains_profanity(example["text"])
+        or filler_pattern1.search(example["text"])
+        or filler_pattern2.search(example["text"])
+        or repeat_pattern1.search(example["text"])
+        or repeat_pattern2.search(example["text"])
+    )
 
 
 def tokenize_clean(
@@ -25,8 +37,8 @@ def tokenize_clean(
 
     with open(manifest_path, "w") as f:
         for example in tqdm(dataset):
-            # if filter_fn(example):
-            #     continue
+            if filter_fn(example):
+                continue
 
             id_ = str((Path("clean/train") / example["id"]).with_suffix(""))
 

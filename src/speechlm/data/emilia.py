@@ -33,6 +33,7 @@ from tqdm import tqdm
 
 from ...bigvgan.data import mel_spectrogram
 from ...s5hubert import SylRegForSyllableDiscovery
+from .utils import filler_pattern1, filler_pattern2, repeat_pattern1, repeat_pattern2
 
 out_emilia = {
     "EN_B00013_S00913",
@@ -125,6 +126,10 @@ oov_pattern = re.compile(f"[^{re.escape(vocab)}]")
 def filter_emilia(example: dict):
     return (
         oov_pattern.search(example["json"]["text"])
+        or filler_pattern1.search(example["json"]["text"])
+        or filler_pattern2.search(example["json"]["text"])
+        or repeat_pattern1.search(example["json"]["text"])
+        or repeat_pattern2.search(example["json"]["text"])
         or profanity.contains_profanity(example["json"]["text"])
         or example["json"]["dnsmos"] < 3.45
         or example["json"]["duration"] < 10
@@ -135,6 +140,10 @@ def filter_emilia(example: dict):
 def filter_yodas(example: dict):
     return (
         oov_pattern.search(example["json"]["text"])
+        or filler_pattern1.search(example["json"]["text"])
+        or filler_pattern2.search(example["json"]["text"])
+        or repeat_pattern1.search(example["json"]["text"])
+        or repeat_pattern2.search(example["json"]["text"])
         or profanity.contains_profanity(example["json"]["text"])
         or example["json"]["dnsmos"] < 3.45
         or example["json"]["duration"] < 10

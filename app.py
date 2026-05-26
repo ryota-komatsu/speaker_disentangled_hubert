@@ -1,10 +1,10 @@
 import re
 
 import gradio as gr
-import librosa
 import matplotlib.pyplot as plt
 import torch
 import torchaudio
+from datasets import Audio, load_dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoModelForSpeechSeq2Seq,
@@ -43,14 +43,16 @@ pipe = pipeline(
 
 transform = torchaudio.transforms.MelSpectrogram(hop_length=320, n_mels=80, center=False).to(device)
 
+dataset = load_dataset("fixie-ai/llama-questions", split="test")
+dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
+dataset = dataset.with_format("torch")
+
 
 @torch.inference_mode()
 def main(audio: str, temperature: float):
     # load a waveform
     input_values, sr = torchaudio.load(audio)
     input_values = torchaudio.functional.resample(input_values, sr, 16000)
-    input_values = librosa.effects.trim(input_values.numpy(), top_db=30)[0]
-    input_values = torch.from_numpy(input_values)
 
     # encode a waveform into syllabic units
     units = encoder(input_values.to(encoder.device))[0]["units"]  # [3950, 67, ..., 503]
@@ -99,10 +101,21 @@ def main(audio: str, temperature: float):
     return (16000, generated_speech), generated_text, "spectrogram.png"
 
 
+def load_audio(choice):
+    torchaudio.save(
+        "input.wav",
+        dataset[choice]["audio"]["array"].unsqueeze(0),
+        dataset[choice]["audio"]["sampling_rate"],
+    )
+    return "input.wav"
+
+
 if __name__ == "__main__":
-    with gr.Blocks(title="Speech Continuation") as demo:
+    with gr.Blocks(title="Spoken question answering") as demo:
         with gr.Row():
-            audio_in = gr.Audio(type="filepath", label="Original speech")
+            choices = [(f"Q{n}: {q}", n) for n, q in enumerate(dataset["question"])]
+            dropdown = gr.Dropdown(choices=choices, value=0, type="index", label="Question")
+            audio_in = gr.Audio(type="filepath", label="Speech input")
 
         with gr.Column():
             temperature = gr.Slider(minimum=0.1, maximum=1.0, value=0.8, step=0.1, label="Temperature")
@@ -113,6 +126,8 @@ if __name__ == "__main__":
             text_out = gr.Textbox(label="Transcript")
             plot_out = gr.Image(type="filepath", label="Syllabic tokenization")
 
+        demo.load(fn=load_audio, inputs=dropdown, outputs=audio_in)
+        dropdown.change(fn=load_audio, inputs=dropdown, outputs=audio_in)
         btn.click(main, inputs=[audio_in, temperature], outputs=[audio_out, text_out, plot_out])
 
     demo.launch()
