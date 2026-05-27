@@ -4,12 +4,13 @@ import numpy as np
 import torch
 from transformers import PreTrainedModel
 
+from .data2vec2 import Data2Vec2Config, Data2VecMultiModel
 from .mincut import mincut_torch
 from .modules import fix_random_seed
 
 
 class SylRegForSyllableDiscovery(PreTrainedModel):
-    config_class = HubertConfig
+    config_class = Data2Vec2Config
     base_model_prefix = "model"
     main_input_name = "input_values"
 
@@ -45,10 +46,10 @@ class SylRegForSyllableDiscovery(PreTrainedModel):
         self.min_duration = min_duration
         self.max_duration = max_duration
 
-        self.model = HubertModel(config)
+        self.model = Data2VecMultiModel(config)
         self.model.eval()
 
-        self.register_buffer("quantizer1", torch.rand(n_units_step1, config.hidden_size))
+        self.register_buffer("quantizer1", torch.rand(n_units_step1, config.embed_dim))
         self.register_buffer("quantizer2", torch.zeros(n_units_step1, dtype=torch.int))
 
         fix_random_seed(seed)

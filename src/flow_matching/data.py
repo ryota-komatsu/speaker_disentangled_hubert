@@ -81,6 +81,45 @@ def tokenize(config):
     )
     dataset.push_to_hub(config.dataset.name, "LibriTTS-R")
 
+    # dailytalk
+    def _tokenize(example):
+        input_values = example["audio"]["array"]
+        input_values = librosa.effects.trim(input_values, top_db=20)[0]
+        input_values = torch.from_numpy(input_values)
+        input_values = input_values.to(encoder.device, torch.float)
+        input_values = input_values / input_values.abs().max() * 0.95
+        input_values = input_values.unsqueeze(0)
+
+        spectrogram_labels = mel_spectrogram(input_values).squeeze(0)  # (80, len)
+        spectrogram_labels = spectrogram_labels.transpose(0, 1)  # (len, 80)
+        spectrogram_labels = spectrogram_labels.cpu().tolist()
+
+        outputs = encoder(input_values)
+
+        return {
+            "id": "",
+            "units": outputs[0]["units"].tolist(),
+            "durations": outputs[0]["durations"].tolist(),
+            "transcript": "",
+            "spectrogram": spectrogram_labels,
+        }
+
+    dataset = load_dataset("eustlb/dailytalk-conversations-grouped", split="train", num_proc=6)
+    dataset = dataset.map(
+        _tokenize,
+        remove_columns=[
+            "conversation_id",
+            "speaker_ids",
+            "turn_ids",
+            "texts",
+            "audio_cut_idxs",
+            "conversation",
+        ],
+    )
+    dataset = dataset.cast(features)
+    dataset = dataset.remove_column("audio")
+    dataset.push_to_hub(config.dataset.name, "dailytalk")
+
     # Hi-Fi-CAPTAIN
     data_files = {
         "female": glob.glob(os.path.join(config.dataset.hfc_dir, "female/**/*.wav"), recursive=True),
