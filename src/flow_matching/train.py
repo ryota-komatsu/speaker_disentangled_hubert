@@ -92,7 +92,10 @@ def train_dit(config):
     libritts = load_dataset(config.dataset.name, "LibriTTS-R", split="train", keep_in_memory=True)
     emilia = load_dataset(config.dataset.name, "emilia", split="train", keep_in_memory=True)
     yodas = load_dataset(config.dataset.name, "emilia_yodas", split="train")
-    train_dataset = concatenate_datasets([libritts, emilia, yodas])
+    dailytalk = load_dataset(config.dataset.name, "dailytalk", split="train")
+    hificaptain = load_dataset(config.dataset.name, "Hi-Fi-CAPTAIN", split="female", keep_in_memory=True)
+
+    train_dataset = concatenate_datasets([libritts, emilia, yodas, dailytalk, hificaptain])
     # eval_dataset = load_dataset(config.dataset.name, "LibriTTS-R", split="dev", keep_in_memory=True)
 
     train_dataset = train_dataset.with_format("torch")

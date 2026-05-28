@@ -323,7 +323,7 @@ class AudioEncoder(nn.Module):
         return padding_mask
 
 
-class Data2VecMultiModel(PreTrainedModel):
+class Data2Vec2Model(PreTrainedModel):
     config_class = Data2Vec2Config
     base_model_prefix = "model"
 

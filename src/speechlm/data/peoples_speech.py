@@ -6,7 +6,7 @@ from datasets import Audio, load_dataset
 from tqdm import tqdm
 
 from ...s5hubert import SylRegForSyllableDiscovery
-from .utils import filler_pattern1, filler_pattern2, repeat_pattern1, repeat_pattern2
+from .utils import filler_pattern1, filler_pattern2, repeat_pattern1, repeat_pattern2, single_word_pattern
 
 
 def filter_fn(example: dict):
@@ -16,6 +16,7 @@ def filter_fn(example: dict):
         or filler_pattern2.search(example["text"])
         or repeat_pattern1.search(example["text"])
         or repeat_pattern2.search(example["text"])
+        or single_word_pattern.search(example["text"])
     )
 
 
@@ -70,8 +71,8 @@ def tokenize_clean_sa(
 
     with open(manifest_path, "w") as f:
         for example in tqdm(dataset):
-            # if filter_fn(example):
-            #     continue
+            if filter_fn(example):
+                continue
 
             id_ = str((Path("clean_sa/train") / example["id"]).with_suffix(""))
 

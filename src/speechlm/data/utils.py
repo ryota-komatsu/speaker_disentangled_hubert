@@ -19,6 +19,7 @@ filler_pattern1 = re.compile(r"\buhm?,?\b", re.IGNORECASE)
 filler_pattern2 = re.compile(r"\bum,?\b", re.IGNORECASE)
 repeat_pattern1 = re.compile(r"\b(\w+)\b([,\s]+\1\b)+", re.IGNORECASE)
 repeat_pattern2 = re.compile(r"\b(\w+\s+\w+)\b([,\s]+\1\b)+", re.IGNORECASE)
+single_word_pattern = re.compile(r"^\w+$", re.IGNORECASE)
 
 
 def get_collator(tokenizer, max_length: int = 128):
