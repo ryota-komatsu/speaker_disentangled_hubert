@@ -48,7 +48,7 @@ class BigVGanConfig(PretrainedConfig):
         super().__init__(**kwargs)
 
 
-class AMPBlock1(torch.nn.Module):
+class AMPBlock1(nn.Module):
     """
     AMPBlock applies Snake / SnakeBeta activation functions with trainable parameters that control periodicity, defined for each layer.
     AMPBlock1 has additional self.convs2 that contains additional Conv1d layers with a fixed dilation=1 followed by each layer in self.convs1
@@ -150,8 +150,6 @@ class BigVGan(PreTrainedModel):
 
     def __init__(self, config: BigVGanConfig):
         super().__init__(config)
-        self.config = config
-
         self.num_kernels = len(config.resblock_kernel_sizes)
         self.num_upsamples = len(config.upsample_rates)
 

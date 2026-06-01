@@ -338,8 +338,6 @@ class Data2Vec2Model(PreTrainedModel):
 
     def __init__(self, config: Data2Vec2Config):
         super().__init__(config)
-        self.config = config
-
         make_layer_norm = partial(nn.LayerNorm, eps=config.norm_eps, elementwise_affine=config.norm_affine)
 
         def make_block():

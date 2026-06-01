@@ -18,7 +18,7 @@ from torchaudio.transforms import Resample, Spectrogram
 from .utils import get_padding
 
 
-class DiscriminatorP(torch.nn.Module):
+class DiscriminatorP(nn.Module):
     def __init__(
         self,
         h,
@@ -105,7 +105,7 @@ class DiscriminatorP(torch.nn.Module):
         return x, fmap
 
 
-class MultiPeriodDiscriminator(torch.nn.Module):
+class MultiPeriodDiscriminator(nn.Module):
     def __init__(self, h):
         super().__init__()
         self.mpd_reshapes = h.mpd_reshapes
