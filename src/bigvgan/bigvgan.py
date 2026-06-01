@@ -145,7 +145,7 @@ class BigVGan(PreTrainedModel):
         - Ensure that the activation function is correctly specified in the hyperparameters (config.activation).
     """
 
-    config_class = BigVGanConfig
+    config: BigVGanConfig
     base_model_prefix = "vocoder"
 
     def __init__(self, config: BigVGanConfig):

@@ -10,7 +10,7 @@ from .modules import fix_random_seed
 
 
 class SylRegForSyllableDiscovery(PreTrainedModel):
-    config_class = Data2Vec2Config
+    config: Data2Vec2Config
     base_model_prefix = "model"
     main_input_name = "input_values"
 

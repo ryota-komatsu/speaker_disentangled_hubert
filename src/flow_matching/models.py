@@ -396,7 +396,7 @@ class RotaryEmbedding(nn.Module):
 
 
 class FlowMatchingModel(PreTrainedModel):
-    config_class = FlowMatchingConfig
+    config: FlowMatchingConfig
     base_model_prefix = "model"
 
     def __init__(self, config: FlowMatchingConfig):
@@ -544,7 +544,7 @@ class FlowMatchingModel(PreTrainedModel):
 
 
 class FlowMatchingModelV2(PreTrainedModel):
-    config_class = FlowMatchingConfig
+    config: FlowMatchingConfig
     base_model_prefix = "model"
 
     def __init__(self, config: FlowMatchingConfig):
@@ -726,7 +726,7 @@ class FlowMatchingModelV2(PreTrainedModel):
 
 
 class FlowMatchingWithBigVGan(PreTrainedModel):
-    config_class = FlowMatchingWithBigVGanConfig
+    config: FlowMatchingWithBigVGanConfig
 
     def __init__(self, config: FlowMatchingWithBigVGanConfig):
         super().__init__(config)
