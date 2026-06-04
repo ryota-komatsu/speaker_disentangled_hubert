@@ -4,48 +4,17 @@
 # Adapted from https://github.com/jik876/hifi-gan under the MIT license.
 #   LICENSE is in incl_licenses directory.
 
-from typing import List
-
 import torch
 import torch.nn as nn
 from torch.nn import Conv1d, ConvTranspose1d
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils.parametrize import remove_parametrizations
-from transformers import PretrainedConfig, PreTrainedModel
+from transformers import PreTrainedModel
+from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
+from transformers.models.qwen2_5_omni.modeling_qwen2_5_omni import TorchActivation1d
 
 from . import activations
-from .alias_free_activation.torch.act import Activation1d as TorchActivation1d
 from .utils import get_padding, init_weights
-
-
-class BigVGanConfig(PretrainedConfig):
-    model_type = "bigvgan"
-
-    def __init__(
-        self,
-        model_in_dim: int = 80,
-        upsample_initial_channel: int = 512,
-        upsample_rates: List[int] = [5, 4, 4, 2, 2],
-        upsample_kernel_sizes: List[int] = [10, 9, 8, 4, 4],
-        resblock_kernel_sizes: List[int] = [3, 7, 11],
-        resblock_dilation_sizes: List[List[int]] = [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
-        use_tanh_at_final: bool = False,
-        use_bias_at_final: bool = False,
-        activation: str = "snakebeta",
-        snake_logscale: bool = True,
-        **kwargs,
-    ):
-        self.model_in_dim = model_in_dim
-        self.upsample_initial_channel = upsample_initial_channel
-        self.upsample_rates = upsample_rates
-        self.upsample_kernel_sizes = upsample_kernel_sizes
-        self.resblock_kernel_sizes = resblock_kernel_sizes
-        self.resblock_dilation_sizes = resblock_dilation_sizes
-        self.use_tanh_at_final = use_tanh_at_final
-        self.use_bias_at_final = use_bias_at_final
-        self.activation = activation
-        self.snake_logscale = snake_logscale
-        super().__init__(**kwargs)
 
 
 class AMPBlock1(nn.Module):
@@ -63,7 +32,7 @@ class AMPBlock1(nn.Module):
 
     def __init__(
         self,
-        config: BigVGanConfig,
+        config: Qwen2_5OmniBigVGANConfig,
         channels: int,
         kernel_size: int = 3,
         dilation: tuple = (1, 3, 5),
@@ -145,16 +114,16 @@ class BigVGan(PreTrainedModel):
         - Ensure that the activation function is correctly specified in the hyperparameters (config.activation).
     """
 
-    config: BigVGanConfig
+    config: Qwen2_5OmniBigVGANConfig
     base_model_prefix = "vocoder"
 
-    def __init__(self, config: BigVGanConfig):
+    def __init__(self, config: Qwen2_5OmniBigVGANConfig):
         super().__init__(config)
         self.num_kernels = len(config.resblock_kernel_sizes)
         self.num_upsamples = len(config.upsample_rates)
 
         # Pre-conv
-        self.conv_pre = Conv1d(config.model_in_dim, config.upsample_initial_channel, 7, 1, padding=3)
+        self.conv_pre = Conv1d(config.mel_dim, config.upsample_initial_channel, 7, 1, padding=3)
 
         # Transposed conv-based upsamplers. does not apply anti-aliasing
         self.ups = nn.ModuleList()

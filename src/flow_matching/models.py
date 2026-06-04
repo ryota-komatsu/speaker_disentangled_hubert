@@ -30,11 +30,12 @@ from torch import nn
 from transformers import PreTrainedModel
 from transformers.modeling_rope_utils import dynamic_rope_update
 from transformers.models.fastspeech2_conformer.modeling_fastspeech2_conformer import length_regulator
+from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
 from transformers.models.qwen2_5_omni.modeling_qwen2_5_omni import SinusPositionEmbedding
 from transformers.models.qwen3.modeling_qwen3 import Qwen3RotaryEmbedding, apply_rotary_pos_emb
 from transformers.utils import ModelOutput
 
-from ..bigvgan.bigvgan import BigVGan, BigVGanConfig
+from ..bigvgan.bigvgan import BigVGan
 from ..bigvgan.data import dynamic_range_compression_torch
 from .configs import FlowMatchingConfig, FlowMatchingWithBigVGanConfig
 from .modules.fastspeech import MLP, FlowMatchingDurationPredictor
@@ -742,7 +743,7 @@ class FlowMatchingWithBigVGan(PreTrainedModel):
         vocoder_path,
     ) -> "FlowMatchingWithBigVGan":
         model_config = FlowMatchingConfig.from_pretrained(model_path)
-        vocoder_config = BigVGanConfig.from_pretrained(vocoder_path)
+        vocoder_config = Qwen2_5OmniBigVGANConfig.from_pretrained(vocoder_path)
         config = FlowMatchingWithBigVGanConfig(model_config.to_dict(), vocoder_config.to_dict())
 
         model = cls(config)

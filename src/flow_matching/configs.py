@@ -1,8 +1,7 @@
 from typing import Dict, Optional
 
 from transformers import PretrainedConfig
-
-from ..bigvgan.bigvgan import BigVGanConfig
+from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
 
 
 class FlowMatchingConfig(PretrainedConfig):
@@ -15,7 +14,7 @@ class FlowMatchingConfig(PretrainedConfig):
         num_hidden_layers: int = 4,
         num_encoder_layers: int = 2,
         num_attention_heads: int = 2,
-        intermediate_size: int = 768,
+        intermediate_size: int = 1024,
         attention_dropout: float = 0.0,
         cfg_dropout: float = 0.2,
         mean: float = -5.8843,
@@ -49,7 +48,7 @@ class FlowMatchingConfig(PretrainedConfig):
 
 class FlowMatchingWithBigVGanConfig(PretrainedConfig):
     model_type = "flow_matching_with_bigvgan"
-    sub_configs = {"model_config": FlowMatchingConfig, "vocoder_config": BigVGanConfig}
+    sub_configs = {"model_config": FlowMatchingConfig, "vocoder_config": Qwen2_5OmniBigVGANConfig}
 
     def __init__(
         self,
@@ -64,5 +63,5 @@ class FlowMatchingWithBigVGanConfig(PretrainedConfig):
             vocoder_config = {}
 
         self.model_config = FlowMatchingConfig(**model_config)
-        self.vocoder_config = BigVGanConfig(**vocoder_config)
+        self.vocoder_config = Qwen2_5OmniBigVGANConfig(**vocoder_config)
         super().__init__(**kwargs)

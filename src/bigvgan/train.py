@@ -12,8 +12,9 @@ from torch.distributed import init_process_group
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.utils.tensorboard import SummaryWriter
+from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
 
-from .bigvgan import BigVGan, BigVGanConfig
+from .bigvgan import BigVGan
 from .data import MelDataset, mel_spectrogram
 from .discriminators import MultiBandDiscriminator, MultiPeriodDiscriminator
 from .loss import MultiScaleMelSpectrogramLoss, discriminator_loss, feature_loss, generator_loss
@@ -35,8 +36,8 @@ def train(rank, config):
     device = torch.device(f"cuda:{rank:d}")
 
     generator = BigVGan(
-        BigVGanConfig(
-            model_in_dim=config.vocoder.model_in_dim,
+        Qwen2_5OmniBigVGANConfig(
+            mel_dim=config.vocoder.model_in_dim,
             upsample_initial_channel=config.vocoder.upsample_initial_channel,
             upsample_rates=list(config.vocoder.upsample_rates),
             upsample_kernel_sizes=list(config.vocoder.upsample_kernel_sizes),

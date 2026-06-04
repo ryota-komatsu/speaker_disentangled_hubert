@@ -15,16 +15,17 @@ from transformers import (
     TrainingArguments,
     pipeline,
 )
+from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
 
-from ..bigvgan.bigvgan import BigVGan, BigVGanConfig
+from ..bigvgan.bigvgan import BigVGan
 from .configs import FlowMatchingConfig
 from .data import get_collate_fn
 from .models import FlowMatchingModelV2
 from .utils import get_input_embeddings
 
 # register BigVGan
-AutoConfig.register("bigvgan", BigVGanConfig)
-AutoModel.register(BigVGanConfig, BigVGan)
+AutoConfig.register("bigvgan", Qwen2_5OmniBigVGANConfig)
+AutoModel.register(Qwen2_5OmniBigVGANConfig, BigVGan)
 
 
 class EvaluationCallback(TrainerCallback):
