@@ -36,6 +36,7 @@ from tqdm import tqdm
 from transformers.models.whisper.english_normalizer import ADDITIONAL_DIACRITICS
 
 from ...s5hubert import SylRegForSyllableDiscovery
+from .utils import add_aligned_units, get_aligner
 
 vocab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\",.?! ;:()[]—_" + "".join(ADDITIONAL_DIACRITICS)
 pattern = f"[^{re.escape(vocab)}]"
@@ -184,6 +185,7 @@ def tokenize_libriheavy(
     dataset = dataset.shard(num_shards=num_shards, index=shard_index)
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(config.speech2unit.model_name_or_path, device_map="cuda")
+    aligner = get_aligner()
 
     manifest_path = Path(data_dir) / f"manifest{shard_index}.json"
 
@@ -209,6 +211,8 @@ def tokenize_libriheavy(
                 "id": example["id"],
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
+                "aligned_text": aligner(input_values, text),
             }
+            example = add_aligned_units(example)
             json.dump(example, f)
             f.write("\n")

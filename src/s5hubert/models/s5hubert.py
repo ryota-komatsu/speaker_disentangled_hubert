@@ -25,6 +25,7 @@ from transformers import AutoConfig, AutoModel
 from transformers.models.hubert.modeling_hubert import HubertModel, HubertPreTrainedModel
 from transformers.utils import ModelOutput
 
+from .data2vec2 import Data2Vec2Config, Data2Vec2Model
 from .mincut import mincut_torch
 from .modules import MLP, fix_random_seed
 
@@ -38,10 +39,12 @@ class S5Hubert(nn.Module):
         head_hidden_size: int = 2048,
         ema_decay: float = 0.999,
         layerdrop: float = 0.0,
+        kernel_size: int = 100,
     ):
         super().__init__()
         self.ema_decay = ema_decay
         self.init_last_layer = init_last_layer
+        self.kernel_size = kernel_size
 
         config = AutoConfig.from_pretrained(model_name_or_path)
         config.num_hidden_layers = config.num_hidden_layers - init_last_layer
@@ -59,6 +62,7 @@ class S5Hubert(nn.Module):
             head_hidden_size,
             norm_outputs=True,
         )
+        self.pooler = nn.AvgPool1d(kernel_size)
         self.loss_fn = nn.MSELoss()
 
         self.make_teacher(head_out_size, head_hidden_size)
@@ -112,9 +116,13 @@ class S5Hubert(nn.Module):
             )
 
             teacher_hidden_states[-1][~teacher_padding_mask] = 0
-            teacher_pooled_output = teacher_hidden_states[-1].sum(dim=1) / teacher_padding_mask.sum(dim=1, keepdim=True)
+            teacher_pooled_output = self.pooler(teacher_hidden_states[-1].permute(0, 2, 1)).permute(0, 2, 1)
+            teacher_padding_mask = (
+                torch.arange(teacher_pooled_output.shape[1], device=teacher_padding_mask.device).unsqueeze(0)
+                < teacher_padding_mask.sum(dim=1, keepdim=True) // self.kernel_size
+            )
 
-            teacher_projection = self.teacher_projector(teacher_pooled_output)
+            teacher_projection = self.teacher_projector(teacher_pooled_output[teacher_padding_mask])
 
         # enable dropout
         self.student.feature_projection.train()
@@ -122,9 +130,13 @@ class S5Hubert(nn.Module):
         student_hidden_states, student_padding_mask = self.student_forward(student_input_values, student_attention_mask)
 
         student_hidden_states[-1][~student_padding_mask] = 0
-        student_pooled_output = student_hidden_states[-1].sum(dim=1) / student_padding_mask.sum(dim=1, keepdim=True)
+        student_pooled_output = self.pooler(student_hidden_states[-1].permute(0, 2, 1)).permute(0, 2, 1)
+        student_padding_mask = (
+            torch.arange(student_pooled_output.shape[1], device=student_padding_mask.device).unsqueeze(0)
+            < student_padding_mask.sum(dim=1, keepdim=True) // self.kernel_size
+        )
 
-        student_projection = self.student_projector(student_pooled_output)
+        student_projection = self.student_projector(student_pooled_output[student_padding_mask])
         student_prediction = self.student_predictor(student_projection)
 
         loss = self.loss_fn(student_prediction, teacher_projection)
@@ -455,8 +467,13 @@ class S5HubertForSelfSegmentation(nn.Module):
         self.min_duration = min_duration
         self.max_duration = max_duration
 
-        self.student = AutoModel.from_pretrained(model_name_or_path, config=config, weights_only=False)
-        self.teacher = AutoModel.from_pretrained(model_name_or_path, config=config, weights_only=False)
+        self.student = Data2Vec2Model(Data2Vec2Config())
+        self.teacher = Data2Vec2Model(Data2Vec2Config())
+        state_dict = torch.hub.load_state_dict_from_url(
+            "https://dl.fbaipublicfiles.com/fairseq/data2vec2/base_libri.pt"
+        )["model"]
+        self.student.load_state_dict(state_dict, strict=False)
+        self.teacher.load_state_dict(state_dict, strict=False)
         self.segmenter = AutoModel.from_pretrained(model_name_or_path, config=config, weights_only=False)
         self.self_segment = False
 

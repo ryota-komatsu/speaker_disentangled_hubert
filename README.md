@@ -1,4 +1,4 @@
-# SylReg: Speaker-Disentangled Regression for Syllabic Tokenization
+# SylReg: Speaker-Disentangled Chunk-Wise Regression for Syllabic Tokenization
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org)
@@ -8,6 +8,8 @@
 [![demo](https://img.shields.io/badge/Project-Page-blue)](https://ryota-komatsu.github.io/speaker_disentangled_hubert)
 
 This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT](https://arxiv.org/abs/2409.10103).
+
+## Results
 
 ![](docs/figures/results.png)
 
@@ -30,8 +32,8 @@ wav_path = "/path/to/wav"
 # download pretrained models from hugging face hub
 encoder = SylRegForSyllableDiscovery.from_pretrained("ryota-komatsu/SylReg-Distill", device_map="cuda", dtype="auto")
 decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/SylReg-Decoder", device_map="cuda", dtype="auto")
-speechlm = AutoModelForCausalLM.from_pretrained("/path/to/speechLM", device_map="cuda", dtype="auto")
-tokenizer = AutoTokenizer.from_pretrained("/path/to/speechLM")
+speechlm = AutoModelForCausalLM.from_pretrained("ryota-komatsu/SylReg-LM-7B-Instruct", device_map="cuda", dtype="auto")
+tokenizer = AutoTokenizer.from_pretrained("ryota-komatsu/SylReg-LM-7B-Instruct")
 
 # load a waveform
 waveform, sr = torchaudio.load(wav_path)
@@ -162,5 +164,16 @@ qsub -g ${GROUP_NAME} scripts/run_speechlm_deepspeed.bash configs/speechlm/defau
   booktitle = {IEEE Spoken Language Technology Workshop},
   pages     = {1131--1136},
   doi       = {10.1109/SLT61566.2024.10832325},
+}
+```
+
+```bibtex
+@article{Komatsu_SylReg_2026,
+  author    = {Komatsu, Ryota and Kawakita, Kota and Okamoto, Takuma and Shinozaki, Takahiro},
+  title     = {Speaker-Disentangled Chunk-Wise Regression for Syllabic Tokenization},
+  year      = {2026},
+  volume    = {},
+  journal   = {},
+  pages     = {},
 }
 ```

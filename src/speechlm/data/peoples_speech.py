@@ -6,7 +6,15 @@ from datasets import Audio, load_dataset
 from tqdm import tqdm
 
 from ...s5hubert import SylRegForSyllableDiscovery
-from .utils import filler_pattern1, filler_pattern2, repeat_pattern1, repeat_pattern2, single_word_pattern
+from .utils import (
+    add_aligned_units,
+    filler_pattern1,
+    filler_pattern2,
+    get_aligner,
+    repeat_pattern1,
+    repeat_pattern2,
+    single_word_pattern,
+)
 
 
 def filter_fn(example: dict):
@@ -32,6 +40,7 @@ def tokenize_clean(
     dataset = dataset.with_format("torch")
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    aligner = get_aligner()
 
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     manifest_path = Path(data_dir) / f"manifest_clean{shard_index}.json"
@@ -51,7 +60,9 @@ def tokenize_clean(
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
+                "aligned_text": aligner(input_values, example["text"]),
             }
+            example = add_aligned_units(example)
             json.dump(example, f)
             f.write("\n")
 
@@ -65,6 +76,7 @@ def tokenize_clean_sa(
     dataset = dataset.with_format("torch")
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    aligner = get_aligner()
 
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     manifest_path = Path(data_dir) / "manifest_clean_sa.json"
@@ -84,6 +96,8 @@ def tokenize_clean_sa(
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
+                "aligned_text": aligner(input_values, example["text"]),
             }
+            example = add_aligned_units(example)
             json.dump(example, f)
             f.write("\n")

@@ -27,5 +27,5 @@ tensorboard==2.17.0
 timm
 torch==2.5.1+cu124
 torchaudio==2.5.1+cu124
-transformers @ git+https://github.com/mbtariq82/transformers.git@qwen3-asr
+transformers>=5.13.0
 trl

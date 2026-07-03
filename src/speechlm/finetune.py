@@ -112,6 +112,24 @@ def data(config, num_proc: int = 6):
     dataset.push_to_hub(config.dataset.name, "dailytalk", split="train")
 
 
+def interleave(example):
+    speech_to_text = []
+    text_to_speech = []
+
+    for turn_idx, (message, spoken_message) in enumerate(zip(example["messages"], example["spoken_messages"])):
+        if turn_idx % 2 == 0:
+            speech_to_text.append(spoken_message)
+            text_to_speech.append(message)
+        else:
+            speech_to_text.append(message)
+            text_to_speech.append(spoken_message)
+
+    example["speech_to_text_messages"] = speech_to_text
+    example["text_to_speech_messages"] = text_to_speech
+
+    return example
+
+
 def finetune(config):
     args = SFTConfig(**OmegaConf.to_container(config.training_args))
 
@@ -121,6 +139,10 @@ def finetune(config):
     dailytalk = load_dataset(config.dataset.name, "dailytalk", split="train").remove_columns("audio")
     openhermes = load_dataset(config.dataset.name, "OpenHermes", split="train").remove_columns("audio")
 
+    everyday_conversations = everyday_conversations.map(interleave)
+    dailytalk = dailytalk.map(interleave)
+    openhermes = openhermes.map(interleave)
+
     train_dataset = concatenate_datasets(
         [
             everyday_conversations,
@@ -129,6 +151,12 @@ def finetune(config):
             everyday_conversations.remove_columns("messages").rename_column("spoken_messages", "messages"),
             dailytalk.remove_columns("messages").rename_column("spoken_messages", "messages"),
             openhermes.remove_columns("messages").rename_column("spoken_messages", "messages"),
+            everyday_conversations.remove_columns("messages").rename_column("speech_to_text_messages", "messages"),
+            dailytalk.remove_columns("messages").rename_column("speech_to_text_messages", "messages"),
+            openhermes.remove_columns("messages").rename_column("speech_to_text_messages", "messages"),
+            everyday_conversations.remove_columns("messages").rename_column("text_to_speech_messages", "messages"),
+            dailytalk.remove_columns("messages").rename_column("text_to_speech_messages", "messages"),
+            openhermes.remove_columns("messages").rename_column("text_to_speech_messages", "messages"),
         ]
     )
 

@@ -22,11 +22,28 @@ repeat_pattern2 = re.compile(r"\b(\w+\s+\w+)\b([,\s]+\1\b)+", re.IGNORECASE)
 single_word_pattern = re.compile(r"^\w+$", re.IGNORECASE)
 
 
-def get_collator(tokenizer, max_length: int = 128):
+def get_collator(tokenizer, max_length: int = 128, speech_segment_prob: float = 0.4):
     def collator(batch) -> Dict[str, Any]:
         inputs = []
         for item in batch:
-            item = "".join(f"<{unit}>" for unit in item["units"])
+            # text-only
+            if item["text"]:
+                item = item["text"]
+
+            # speech-only
+            elif not item["aligned_units"]:
+                item = "".join(f"<{unit}>" for unit in item["units"])
+
+            # speech-text interleaving
+            else:
+                is_speech = np.random.rand(len(item["aligned_units"])) < speech_segment_prob
+                is_speech[1:] &= ~is_speech[:-1]  # p(1-p) = 0.4 * 0.6 = 0.24
+
+                item = "".join(
+                    "".join(f"<{unit}>" for unit in chunk["units"]) if is_speech_chunk else chunk["text"]
+                    for is_speech_chunk, chunk in zip(is_speech, item["aligned_units"])
+                ).lstrip()
+
             inputs.append(item + tokenizer.eos_token)
 
         inputs = tokenizer(inputs, padding=False)
@@ -182,7 +199,7 @@ def tokenize_eval(config):
 
 
 def get_aligner(
-    aligner_name: str = "bezzam/Qwen3-ForcedAligner-0.6B",
+    aligner_name: str = "Qwen/Qwen3-ForcedAligner-0.6B-hf",
 ):
     processor = AutoProcessor.from_pretrained(aligner_name)
     model = AutoModelForTokenClassification.from_pretrained(aligner_name, dtype=torch.bfloat16, device_map="auto")

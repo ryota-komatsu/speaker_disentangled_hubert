@@ -8,6 +8,7 @@ from kokoro import KPipeline
 from tqdm import tqdm
 
 from ...s5hubert import SylRegForSyllableDiscovery
+from .utils import add_aligned_units, get_aligner
 
 vocab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\",.?! ;-"
 oov_pattern = re.compile(f"[^{re.escape(vocab)}]")
@@ -37,6 +38,7 @@ def tokenize_cosmopedia(
     dataset = dataset.shard(num_shards, shard_index)
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
+    aligner = get_aligner()
 
     pipeline = KPipeline(lang_code="a")
 
@@ -60,6 +62,8 @@ def tokenize_cosmopedia(
                     "id": id_,
                     "units": outputs[0]["units"].tolist(),
                     "durations": outputs[0]["durations"].tolist(),
+                    "aligned_text": aligner(input_values, gs),
                 }
+                example = add_aligned_units(example)
                 json.dump(example, f)
                 f.write("\n")
