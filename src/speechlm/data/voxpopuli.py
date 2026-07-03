@@ -1,12 +1,12 @@
 from datasets import Audio, load_dataset
 
 from ...s5hubert import SylRegForSyllableDiscovery
-from .utils import add_aligned_units, get_aligner
+from .utils import ForcedAligner, add_aligned_units
 
 
 def get_map_fn(model_name_or_path: str = "ryota-komatsu/SylReg-Distill"):
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
-    aligner = get_aligner()
+    aligner = ForcedAligner()
 
     def map_fn(example):
         input_values = example["audio"]["array"].unsqueeze(0)

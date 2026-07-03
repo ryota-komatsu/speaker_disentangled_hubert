@@ -7,10 +7,10 @@ from tqdm import tqdm
 
 from ...s5hubert import SylRegForSyllableDiscovery
 from .utils import (
+    ForcedAligner,
     add_aligned_units,
     filler_pattern1,
     filler_pattern2,
-    get_aligner,
     repeat_pattern1,
     repeat_pattern2,
     single_word_pattern,
@@ -40,7 +40,7 @@ def tokenize_clean(
     dataset = dataset.with_format("torch")
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
-    aligner = get_aligner()
+    aligner = ForcedAligner()
 
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     manifest_path = Path(data_dir) / f"manifest_clean{shard_index}.json"
@@ -76,7 +76,7 @@ def tokenize_clean_sa(
     dataset = dataset.with_format("torch")
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
-    aligner = get_aligner()
+    aligner = ForcedAligner()
 
     Path(data_dir).mkdir(parents=True, exist_ok=True)
     manifest_path = Path(data_dir) / "manifest_clean_sa.json"

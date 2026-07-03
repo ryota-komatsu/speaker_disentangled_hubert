@@ -172,8 +172,8 @@ qsub -g ${GROUP_NAME} scripts/run_speechlm_deepspeed.bash configs/speechlm/defau
   author    = {Komatsu, Ryota and Kawakita, Kota and Okamoto, Takuma and Shinozaki, Takahiro},
   title     = {Speaker-Disentangled Chunk-Wise Regression for Syllabic Tokenization},
   year      = {2026},
-  volume    = {},
-  journal   = {},
+  volume    = {7},
+  journal   = {IEEE Open Journal of Signal Processing},
   pages     = {},
 }
 ```

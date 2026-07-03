@@ -198,31 +198,32 @@ def tokenize_eval(config):
     sSC.push_to_hub(config.dataset.name, "sSC")
 
 
-def get_aligner(
-    aligner_name: str = "Qwen/Qwen3-ForcedAligner-0.6B-hf",
-):
-    processor = AutoProcessor.from_pretrained(aligner_name)
-    model = AutoModelForTokenClassification.from_pretrained(aligner_name, dtype=torch.bfloat16, device_map="auto")
+class ForcedAligner:
+    def __init__(self, aligner_name: str = "Qwen/Qwen3-ForcedAligner-0.6B-hf"):
+        self.processor = AutoProcessor.from_pretrained(aligner_name)
+        self.model = AutoModelForTokenClassification.from_pretrained(
+            aligner_name, dtype=torch.bfloat16, device_map="auto"
+        )
 
     @torch.inference_mode()
-    def align(input_values: torch.Tensor, text: str) -> List[Dict[str, Any]]:
+    def __call__(self, input_values: torch.Tensor, text: str) -> List[Dict[str, Any]]:
         # Step 1: Prepare alignment inputs
-        inputs, word_lists = processor.prepare_forced_aligner_inputs(
+        inputs, word_lists = self.processor.prepare_forced_aligner_inputs(
             audio=input_values.squeeze(0).numpy(),
             transcript=text,
             language="English",
         )
-        inputs = inputs.to(model.device, model.dtype)
+        inputs = inputs.to(self.model.device, self.model.dtype)
 
         # Step 2: Run forced aligner
-        aligner_outputs = model(**inputs)
+        aligner_outputs = self.model(**inputs)
 
         # Step 3: Decode timestamps
-        timestamps = processor.decode_forced_alignment(
+        timestamps = self.processor.decode_forced_alignment(
             logits=aligner_outputs.logits,
             input_ids=inputs["input_ids"],
             word_lists=word_lists,
-            timestamp_token_id=model.config.timestamp_token_id,
+            timestamp_token_id=self.model.config.timestamp_token_id,
         )[0]
 
         aligned_text = [
@@ -234,8 +235,6 @@ def get_aligner(
             for item in timestamps
         ]
         return aligned_text
-
-    return align
 
 
 def add_aligned_units(example: Dict[str, Any]) -> Dict[str, Any]:

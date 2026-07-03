@@ -8,7 +8,7 @@ dataset:
   eval_dir: "data/LibriSpeech/test-clean"
 
 model_args:
-  name: ""
+  name: "Qwen/Qwen2.5-7B"
   defrost_steps: 5000
 
 training_args:

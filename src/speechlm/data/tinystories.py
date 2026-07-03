@@ -8,7 +8,7 @@ from kokoro import KPipeline
 from tqdm import tqdm
 
 from ...s5hubert import SylRegForSyllableDiscovery
-from .utils import add_aligned_units, get_aligner
+from .utils import ForcedAligner, add_aligned_units
 
 vocab = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'\",.?! ;:0123456789-%"
 oov_pattern = re.compile(f"[^{re.escape(vocab)}]")
@@ -26,7 +26,7 @@ def tokenize_tinystories(
     dataset = dataset.shard(num_shards, shard_index)
 
     encoder = SylRegForSyllableDiscovery.from_pretrained(model_name_or_path, device_map="cuda")
-    aligner = get_aligner()
+    aligner = ForcedAligner()
 
     pipeline = KPipeline(lang_code="a")
 
