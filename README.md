@@ -3,11 +3,15 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org)
 [![colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/ryota-komatsu/speaker_disentangled_hubert/blob/main/demo.ipynb)
-[![arXiv](https://img.shields.io/badge/arXiv-2409.10103-<COLOR>.svg?logo=arXiv)](https://arxiv.org/abs/2409.10103)
+[![arXiv](https://img.shields.io/badge/arXiv-2607.04064-<COLOR>.svg?logo=arXiv)](https://arxiv.org/abs/2607.04064)
 [![model](https://img.shields.io/badge/%F0%9F%A4%97-Model-blue)](https://huggingface.co/collections/ryota-komatsu/sylreg)
 [![demo](https://img.shields.io/badge/Project-Page-blue)](https://ryota-komatsu.github.io/speaker_disentangled_hubert)
 
 This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syllable Discovery Based on Speaker-Disentangled HuBERT](https://arxiv.org/abs/2409.10103).
+
+## News
+- **2026/07/04**: Our [paper](https://arxiv.org/abs/2607.04064) is accepted by IEEE Open Journal of Signal Processing!
+- **2026/07/04**: We release [SylReg-LM 7B](https://huggingface.co/ryota-komatsu/SylReg-LM-7B), an efficiently scalable interleaved syllable-text language model!
 
 ## Results
 
@@ -123,7 +127,7 @@ dataset.root in a config file
     └── SPEAKERS.TXT
 ```
 
-## Syllable discovery
+## Syllabic tokenization
 
 ```shell
 accelerate launch \

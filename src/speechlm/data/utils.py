@@ -9,7 +9,6 @@ import pandas as pd
 import torch
 import torchaudio
 from datasets import Dataset, DatasetDict, load_dataset
-from torch.nn.utils.rnn import pad_sequence
 from tqdm import tqdm
 from transformers import AutoModelForTokenClassification, AutoProcessor
 
@@ -74,13 +73,8 @@ def get_tokenize_fn(encoder, data_dir, text_column: str):
         pos_audio, sr = torchaudio.load(pos_path)
         neg_audio, sr = torchaudio.load(neg_path)
 
-        input_values = [pos_audio.squeeze(0), neg_audio.squeeze(0)]
-        attention_mask = [torch.ones_like(item, dtype=torch.long) for item in input_values]
-
-        input_values = pad_sequence(input_values, batch_first=True)
-        attention_mask = pad_sequence(attention_mask, batch_first=True)
-
-        outputs = encoder(input_values.to(encoder.device), attention_mask.to(encoder.device))
+        pos_outputs = encoder(pos_audio.to(encoder.device))
+        neg_outputs = encoder(neg_audio.to(encoder.device))
 
         example = {
             "filename": {
@@ -92,8 +86,8 @@ def get_tokenize_fn(encoder, data_dir, text_column: str):
                 "neg": group.loc[group["correct"] == 0, text_column].item(),
             },
             "units": {
-                "pos": outputs[0]["units"].tolist(),
-                "neg": outputs[1]["units"].tolist(),
+                "pos": pos_outputs[0]["units"].tolist(),
+                "neg": neg_outputs[0]["units"].tolist(),
             },
         }
 
