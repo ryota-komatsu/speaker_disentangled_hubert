@@ -22,6 +22,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import matplotlib.pyplot as plt
+import numpy as np
 from nltk.tokenize import NLTKWordTokenizer
 from tokenizers import Regex, Tokenizer, models, pre_tokenizers
 from transformers import OPTConfig, PreTrainedTokenizerFast
@@ -99,3 +101,38 @@ class SpeechLMTokenizerFast(PreTrainedTokenizerFast):
             unk_token=unk_token,
             pad_token=eos_token,
         )
+
+
+def plot_results():
+    plt.rcParams["pdf.fonttype"] = 42
+    plt.rcParams["ps.fonttype"] = 42
+
+    c = np.logspace(21, 23, num=100)
+    scaling_law = 26 * c**0.017
+
+    plt.figure()
+
+    plt.plot(c, scaling_law, ":", label="Cuervo+, EMNLP'24")
+    plt.scatter([2.1 * 10**21], [55.3], s=35**2, alpha=0.2, c="c")
+    plt.scatter([5.4 * 10**22], [62.4], s=45**2, alpha=0.2, c="c")
+    plt.scatter([4.0 * 10**21], [61.0], s=35**2, alpha=0.2, c="c")
+    plt.scatter([2.9 * 10**22], [60.8], s=35**2, alpha=0.2, c="c")
+    plt.scatter([1.3 * 10**21], [67.1], s=35**2, alpha=0.2, c="red")
+
+    plt.annotate("TWIST", (0.65 * 2.1 * 10**21, 55.3), fontsize=14)
+    plt.annotate("GLM-4-Voice", (0.65 * 5.4 * 10**22, 62.4), fontsize=14)
+    plt.annotate("SpiRit-LM", (0.65 * 4.0 * 10**21, 61.0), fontsize=14)
+    plt.annotate("Moshi", (0.65 * 2.9 * 10**22, 60.8), fontsize=14)
+    plt.annotate("SylReg-LM", (0.65 * 1.3 * 10**21, 67.1), fontsize=14)
+
+    plt.xlabel("Compute (FLOPs)", fontsize=16)
+    plt.ylabel("Spoken StoryCloze (%)", fontsize=16)
+
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
+
+    plt.xscale("log")
+    plt.ylim(54, 68)
+    plt.legend(fontsize=12)
+
+    plt.savefig("docs/figures/results.png", bbox_inches="tight")
