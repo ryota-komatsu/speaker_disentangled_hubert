@@ -9,9 +9,9 @@ import torch.nn as nn
 from torch.nn import Conv1d, ConvTranspose1d
 from torch.nn.utils.parametrizations import weight_norm
 from torch.nn.utils.parametrize import remove_parametrizations
-from transformers import PreTrainedModel
+from transformers import Qwen2_5OmniPreTrainedModel
 from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
-from transformers.models.qwen2_5_omni.modeling_qwen2_5_omni import TorchActivation1d
+from transformers.models.qwen2_5_omni.modeling_qwen2_5_omni import Qwen2_5OmniAntiAliasedActivation1d
 
 from . import activations
 from .utils import get_padding, init_weights
@@ -75,7 +75,10 @@ class AMPBlock1(nn.Module):
 
         # Activation functions
         self.activations = nn.ModuleList(
-            [TorchActivation1d(activation=activations.SnakeBeta(channels)) for _ in range(self.num_layers)]
+            [
+                Qwen2_5OmniAntiAliasedActivation1d(activation=activations.SnakeBeta(channels))
+                for _ in range(self.num_layers)
+            ]
         )
 
     def forward(self, x):
@@ -102,7 +105,7 @@ class AMPBlock1(nn.Module):
             remove_parametrizations(l, "weight")
 
 
-class BigVGan(PreTrainedModel):
+class BigVGan(Qwen2_5OmniPreTrainedModel):
     """
     BigVGAN is a neural vocoder model that applies anti-aliased periodic activation for residual blocks (resblocks).
     New in BigVGAN-v2: it can optionally use optimized CUDA kernels for AMP (anti-aliased multi-periodicity) blocks.
@@ -116,6 +119,7 @@ class BigVGan(PreTrainedModel):
 
     config: Qwen2_5OmniBigVGANConfig
     base_model_prefix = "vocoder"
+    input_modalities = "audio"
 
     def __init__(self, config: Qwen2_5OmniBigVGANConfig):
         super().__init__(config)
@@ -150,7 +154,7 @@ class BigVGan(PreTrainedModel):
                 self.resblocks.append(AMPBlock1(config, ch, k, d))
 
         # Post-conv
-        self.activation_post = TorchActivation1d(activation=activations.SnakeBeta(ch))
+        self.activation_post = Qwen2_5OmniAntiAliasedActivation1d(activation=activations.SnakeBeta(ch))
         self.conv_post = Conv1d(ch, 1, 7, 1, padding=3, bias=False)
 
         # Weight initialization

@@ -112,7 +112,7 @@ def plot_results():
 
     plt.figure()
 
-    plt.plot(c, scaling_law, ":", label="Cuervo+, EMNLP'24")
+    plt.plot(c, scaling_law, ":", label="Scaling law [Cuervo+, EMNLP'24]")
     plt.scatter([2.1 * 10**21], [55.3], s=35**2, alpha=0.2, c="c")
     plt.scatter([5.4 * 10**22], [62.4], s=45**2, alpha=0.2, c="c")
     plt.scatter([4.0 * 10**21], [61.0], s=35**2, alpha=0.2, c="c")

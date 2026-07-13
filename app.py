@@ -5,13 +5,7 @@ import matplotlib.pyplot as plt
 import torch
 import torchaudio
 from datasets import Audio, load_dataset
-from transformers import (
-    AutoModelForCausalLM,
-    AutoModelForSpeechSeq2Seq,
-    AutoProcessor,
-    AutoTokenizer,
-    pipeline,
-)
+from transformers import AutoModelForCausalLM, AutoModelForSpeechSeq2Seq, AutoProcessor, AutoTokenizer, pipeline
 
 from src.flow_matching import FlowMatchingWithBigVGan
 from src.s5hubert import SylRegForSyllableDiscovery
@@ -22,8 +16,8 @@ dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 # download pretrained models from hugging face hub
 encoder = SylRegForSyllableDiscovery.from_pretrained("ryota-komatsu/SylReg-Distill", device_map=device)
 decoder = FlowMatchingWithBigVGan.from_pretrained("ryota-komatsu/SylReg-Decoder", device_map=device)
-speechlm = AutoModelForCausalLM.from_pretrained("/path/to/speechLM", device_map="cuda", dtype="auto")
-tokenizer = AutoTokenizer.from_pretrained("/path/to/speechLM")
+speechlm = AutoModelForCausalLM.from_pretrained("ryota-komatsu/SylReg-LM-7B-Instruct", device_map="cuda", dtype="auto")
+tokenizer = AutoTokenizer.from_pretrained("ryota-komatsu/SylReg-LM-7B-Instruct")
 
 asr = AutoModelForSpeechSeq2Seq.from_pretrained(
     "openai/whisper-large-v3",
