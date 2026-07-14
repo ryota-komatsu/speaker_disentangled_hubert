@@ -70,7 +70,7 @@ generated_speech = decoder(units.unsqueeze(0)).waveform.cpu()
 
 ## Demo
 
-- Speech resynthesis examples can be heard on the [project page](https://ryota-komatsu.github.io/speaker_disentangled_hubert).
+- You can hear speech resynthesis examples on the [project page](https://ryota-komatsu.github.io/speaker_disentangled_hubert).
 - [Hugging Face gradio demo](https://huggingface.co/spaces/ryota-komatsu/SylReg)
 
 ## Models

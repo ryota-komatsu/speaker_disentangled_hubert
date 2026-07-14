@@ -21,7 +21,6 @@
 # SOFTWARE.
 
 import math
-from functools import partial
 from types import SimpleNamespace
 from typing import Callable
 
@@ -39,8 +38,6 @@ class Data2Vec2Config(PretrainedConfig):
         _name="data2vec_multi",
         depth=7,  # 8
         num_heads=12,
-        norm_eps=1e-05,
-        norm_affine=True,
         encoder_dropout=0.0,  # 0.1
         post_mlp_drop=0.0,  # 0.1
         attention_dropout=0.0,  # 0.1
@@ -67,8 +64,6 @@ class Data2Vec2Config(PretrainedConfig):
         self._name = _name
         self.depth = depth
         self.num_heads = num_heads
-        self.norm_eps = norm_eps
-        self.norm_affine = norm_affine
         self.encoder_dropout = encoder_dropout
         self.post_mlp_drop = post_mlp_drop
         self.attention_dropout = attention_dropout
@@ -89,7 +84,6 @@ class BlockEncoder(nn.Module):
 
     def forward(self, x, padding_mask, alibi_bias, alibi_scale):
         x = self.norm(x)
-
         x = self.dropout(x)
 
         for i, blk in enumerate(self.blocks):
@@ -112,13 +106,12 @@ class Data2Vec2EncoderLayer(nn.Module):
         attn_drop=0.0,
         mlp_drop=0.0,
         post_mlp_drop=0.0,
-        norm_layer=nn.LayerNorm,
     ):
         super().__init__()
-        self.norm1 = norm_layer(dim)
+        self.norm1 = nn.LayerNorm(dim)
         self.attn = Data2Vec2Attention(dim, num_heads, attn_drop, drop)
 
-        self.norm2 = norm_layer(dim)
+        self.norm2 = nn.LayerNorm(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(in_features=dim, hidden_features=mlp_hidden_dim, act_layer=nn.GELU, drop=mlp_drop)
         self.post_mlp_dropout = nn.Dropout(post_mlp_drop, inplace=False)
@@ -217,7 +210,6 @@ class AudioEncoder(nn.Module):
         modality_cfg,
         embed_dim: int,
         make_block: Callable[[], nn.ModuleList],
-        norm_layer: Callable[[int], nn.LayerNorm],
     ):
         super().__init__()
         self.modality_cfg = modality_cfg
@@ -264,7 +256,7 @@ class AudioEncoder(nn.Module):
 
         self.context_encoder = BlockEncoder(
             nn.ModuleList(make_block() for _ in range(modality_cfg.prenet_depth)),
-            norm_layer(embed_dim),
+            nn.LayerNorm(embed_dim),
             modality_cfg.prenet_dropout,
         )
 
@@ -327,18 +319,8 @@ class Data2Vec2Model(PreTrainedModel):
     config: Data2Vec2Config
     base_model_prefix = "model"
 
-    def make_modality_encoder(
-        self,
-        cfg,
-        embed_dim: int,
-        make_block: Callable[[], nn.ModuleList],
-        norm_layer: Callable[[int], nn.LayerNorm],
-    ) -> AudioEncoder:
-        return AudioEncoder(cfg, embed_dim, make_block, norm_layer)
-
     def __init__(self, config: Data2Vec2Config):
         super().__init__(config)
-        make_layer_norm = partial(nn.LayerNorm, eps=config.norm_eps, elementwise_affine=config.norm_affine)
 
         def make_block():
             return Data2Vec2EncoderLayer(
@@ -349,17 +331,11 @@ class Data2Vec2Model(PreTrainedModel):
                 attn_drop=config.attention_dropout,
                 mlp_drop=config.activation_dropout,
                 post_mlp_drop=config.post_mlp_drop,
-                norm_layer=make_layer_norm,
             )
 
         self.modality_encoders = nn.ModuleDict()
         mod_cfg = SimpleNamespace(**config.modalities["audio"])
-        self.modality_encoders["AUDIO"] = self.make_modality_encoder(
-            mod_cfg,
-            config.embed_dim,
-            make_block,
-            make_layer_norm,
-        )
+        self.modality_encoders["AUDIO"] = AudioEncoder(mod_cfg, config.embed_dim, make_block)
 
         self.blocks = nn.ModuleList([make_block() for _ in range(config.depth)])
 
