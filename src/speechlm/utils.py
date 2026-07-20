@@ -49,42 +49,24 @@ def calc_auto_bleu(text: str, nltk_word_tokenizer: NLTKWordTokenizer, n: int):
 
 
 class OPTForSpeechLMConfig(OPTConfig):
-    def __init__(
-        self,
-        vocab_size: int = 8193,
-        hidden_size: int = 768,
-        num_hidden_layers: int = 12,
-        ffn_dim: int = 3072,
-        max_position_embeddings: int = 256,
-        dropout: float = 0.1,
-        num_attention_heads: int = 12,
-        activation_function="gelu",
-        pad_token_id: int = 8192,
-        bos_token_id: int = None,
-        eos_token_id: int = 8192,
-        **kwargs,
-    ):
-        super().__init__(
-            vocab_size=vocab_size,
-            hidden_size=hidden_size,
-            num_hidden_layers=num_hidden_layers,
-            ffn_dim=ffn_dim,
-            max_position_embeddings=max_position_embeddings,
-            dropout=dropout,
-            num_attention_heads=num_attention_heads,
-            activation_function=activation_function,
-            pad_token_id=pad_token_id,
-            bos_token_id=bos_token_id,
-            eos_token_id=eos_token_id,
-            **kwargs,
-        )
+    vocab_size: int = 8193
+    hidden_size: int = 768
+    num_hidden_layers: int = 12
+    ffn_dim: int = 3072
+    max_position_embeddings: int = 256
+    dropout: float = 0.1
+    num_attention_heads: int = 12
+    activation_function: str = "gelu"
+    pad_token_id: int = 8192
+    bos_token_id: int | None = None
+    eos_token_id: int = 8192
 
 
 class SpeechLMTokenizerFast(PreTrainedTokenizerFast):
     def __init__(
         self,
         vocab_size: int = 8192,
-        bos_token: str = None,
+        bos_token: str | None = None,
         eos_token: str = "<|end_of_text|>",
         unk_token: str = "<|unk|>",
     ):

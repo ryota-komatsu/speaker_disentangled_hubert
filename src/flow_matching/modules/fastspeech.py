@@ -20,7 +20,7 @@ from typing import Optional
 import torch
 from torch import nn
 
-from ..configs import FlowMatchingConfig
+from ..configuration_sylreg_decoder import FlowMatchingConfig
 
 
 class MLP(nn.Module):

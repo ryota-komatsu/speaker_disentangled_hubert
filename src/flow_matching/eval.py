@@ -9,7 +9,7 @@ from datasets import load_dataset
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
 from ..s5hubert import SylRegForSyllableDiscovery
-from .models import FlowMatchingWithBigVGan
+from .modeling_sylreg_decoder import FlowMatchingWithBigVGan
 
 sys.path.append("src/utmos")
 warnings.simplefilter("ignore", FutureWarning)

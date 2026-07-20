@@ -29,53 +29,42 @@ from fairseq.models.wav2vec import ConvFeatureExtractionModel
 from fairseq.modules import LayerNorm, SamePad, TransposeLast
 from timm.models.vision_transformer import Mlp
 from torch import nn
-from transformers import PretrainedConfig, PreTrainedModel
+from transformers import PreTrainedConfig, PreTrainedModel
 
 
-class Data2Vec2Config(PretrainedConfig):
-    def __init__(
-        self,
-        _name="data2vec_multi",
-        depth=7,  # 8
-        num_heads=12,
-        encoder_dropout=0.0,  # 0.1
-        post_mlp_drop=0.0,  # 0.1
-        attention_dropout=0.0,  # 0.1
-        activation_dropout=0.0,
-        dropout_input=0.0,
-        embed_dim=768,
-        mlp_ratio=4.0,
-        modalities={
-            "audio": {
-                "prenet_depth": 4,
-                "prenet_dropout": 0.0,  # 0.1
-                "use_alibi_encoder": True,
-                "learned_alibi_scale": False,
-                "num_alibi_heads": 12,
-                "extractor_mode": "layer_norm",
-                "feature_encoder_spec": "[(512, 10, 5)] + [(512, 3, 2)] * 4 + [(512,2,2)] + [(512,2,2)]",
-                "conv_pos_width": 95,
-                "conv_pos_groups": 16,
-                "conv_pos_depth": 5,
+class Data2Vec2Config(PreTrainedConfig):
+    _name: str = "data2vec_multi"
+    depth: int = 7  # 8
+    num_heads: int = 12
+    encoder_dropout: float = 0.0  # 0.1
+    post_mlp_drop: float = 0.0  # 0.1
+    attention_dropout: float = 0.0  # 0.1
+    activation_dropout: float = 0.0
+    dropout_input: float = 0.0
+    embed_dim: int = 768
+    mlp_ratio: float = 4.0
+    modalities: dict | None = None
+
+    def __post_init__(self, **kwargs):
+        if self.modalities is None:
+            self.modalities = {
+                "audio": {
+                    "prenet_depth": 4,
+                    "prenet_dropout": 0.0,  # 0.1
+                    "use_alibi_encoder": True,
+                    "learned_alibi_scale": False,
+                    "num_alibi_heads": 12,
+                    "extractor_mode": "layer_norm",
+                    "feature_encoder_spec": "[(512, 10, 5)] + [(512, 3, 2)] * 4 + [(512,2,2)] + [(512,2,2)]",
+                    "conv_pos_width": 95,
+                    "conv_pos_groups": 16,
+                    "conv_pos_depth": 5,
+                }
             }
-        },
-        **kwargs,
-    ):
-        self._name = _name
-        self.depth = depth
-        self.num_heads = num_heads
-        self.encoder_dropout = encoder_dropout
-        self.post_mlp_drop = post_mlp_drop
-        self.attention_dropout = attention_dropout
-        self.activation_dropout = activation_dropout
-        self.dropout_input = dropout_input
-        self.embed_dim = embed_dim
-        self.mlp_ratio = mlp_ratio
-        self.modalities = modalities
-        super().__init__(**kwargs)
+        super().__post_init__(**kwargs)
 
 
-class BlockEncoder(nn.Module):
+class Data2Vec2BlockEncoder(nn.Module):
     def __init__(self, blocks, norm_layer, dropout):
         super().__init__()
         self.blocks = blocks
@@ -204,7 +193,7 @@ def get_alibi_bias(batch_size, time_steps, heads, dtype, device):
     return alibi_bias
 
 
-class AudioEncoder(nn.Module):
+class Data2Vec2AudioEncoder(nn.Module):
     def __init__(
         self,
         modality_cfg,
@@ -254,7 +243,7 @@ class AudioEncoder(nn.Module):
             TransposeLast(),
         )
 
-        self.context_encoder = BlockEncoder(
+        self.context_encoder = Data2Vec2BlockEncoder(
             nn.ModuleList(make_block() for _ in range(modality_cfg.prenet_depth)),
             nn.LayerNorm(embed_dim),
             modality_cfg.prenet_dropout,
@@ -335,7 +324,7 @@ class Data2Vec2Model(PreTrainedModel):
 
         self.modality_encoders = nn.ModuleDict()
         mod_cfg = SimpleNamespace(**config.modalities["audio"])
-        self.modality_encoders["AUDIO"] = AudioEncoder(mod_cfg, config.embed_dim, make_block)
+        self.modality_encoders["AUDIO"] = Data2Vec2AudioEncoder(mod_cfg, config.embed_dim, make_block)
 
         self.blocks = nn.ModuleList([make_block() for _ in range(config.depth)])
 

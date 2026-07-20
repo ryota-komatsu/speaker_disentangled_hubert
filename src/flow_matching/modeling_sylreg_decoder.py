@@ -37,7 +37,7 @@ from transformers.utils import ModelOutput
 
 from ..bigvgan.bigvgan import BigVGan
 from ..bigvgan.data import dynamic_range_compression_torch
-from .configs import FlowMatchingConfig, FlowMatchingWithBigVGanConfig
+from .configuration_sylreg_decoder import FlowMatchingConfig, FlowMatchingWithBigVGanConfig
 from .modules.fastspeech import MLP, FlowMatchingDurationPredictor
 from .modules.norm import AdaptiveRMSNorm
 

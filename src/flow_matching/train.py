@@ -18,9 +18,9 @@ from transformers import (
 from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
 
 from ..bigvgan.bigvgan import BigVGan
-from .configs import FlowMatchingConfig
+from .configuration_sylreg_decoder import FlowMatchingConfig
 from .data import get_collate_fn
-from .models import FlowMatchingModelV2
+from .modeling_sylreg_decoder import FlowMatchingModelV2
 from .utils import get_input_embeddings
 
 # register BigVGan

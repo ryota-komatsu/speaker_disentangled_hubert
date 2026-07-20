@@ -1,1 +1,1 @@
-from .models import FlowMatchingWithBigVGan
+from .modeling_sylreg_decoder import FlowMatchingWithBigVGan
