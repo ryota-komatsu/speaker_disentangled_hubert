@@ -11,6 +11,7 @@ import torchaudio
 from datasets import Dataset, DatasetDict, load_dataset
 from tqdm import tqdm
 from transformers import AutoModelForTokenClassification, AutoProcessor
+from transformers.models.qwen3_asr.processing_qwen3_asr import _is_cjk_char, _is_kept_char
 
 from ...s5hubert import SylRegForSyllableDiscovery
 
@@ -199,6 +200,45 @@ class ForcedAligner:
             aligner_name, dtype=torch.bfloat16, device_map="auto"
         )
 
+    def clean_token_punctuation(self, token: str) -> str:
+        word = "".join(ch for ch in token if _is_kept_char(ch))
+
+        if len(word) < 2:
+            return word
+
+        if _is_kept_char(token[-2]) and token[-1] in {",", ".", "?", "!"}:
+            return word + token[-1]
+
+        return word
+
+    def split_segment_with_chinese(self, seg: str) -> List[str]:
+        tokens: List[str] = []
+        buf: List[str] = []
+
+        def flush_buf():
+            nonlocal buf
+            if buf:
+                tokens.append("".join(buf))
+                buf = []
+
+        for ch in seg:
+            if _is_cjk_char(ch):
+                flush_buf()
+                tokens.append(ch)
+            else:
+                buf.append(ch)
+
+        flush_buf()
+        return tokens
+
+    def tokenize_space_lang_punctuation(self, text: str) -> List[str]:
+        tokens: List[str] = []
+        for seg in text.split():
+            cleaned = self.clean_token_punctuation(seg)
+            if cleaned:
+                tokens.extend(self.split_segment_with_chinese(cleaned))
+        return tokens
+
     @torch.inference_mode()
     def __call__(self, input_values: torch.Tensor, text: str) -> List[Dict[str, Any]]:
         # Step 1: Prepare alignment inputs
@@ -220,13 +260,16 @@ class ForcedAligner:
             timestamp_token_id=self.model.config.timestamp_token_id,
         )[0]
 
+        word_lists_punctuation = self.tokenize_space_lang_punctuation(text)
+        assert len(word_lists) == len(word_lists_punctuation)
+
         aligned_text = [
             {
                 "start_time": item["start_time"],
                 "end_time": item["end_time"],
-                "word": " " + item["text"],
+                "word": " " + word,  # prepend a space for concatenation. See Line 300.
             }
-            for item in timestamps
+            for item, word in zip(timestamps, word_lists_punctuation, strict=True)
         ]
         return aligned_text
 

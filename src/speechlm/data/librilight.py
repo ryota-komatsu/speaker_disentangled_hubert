@@ -45,6 +45,7 @@ pattern = f"[^{re.escape(vocab)}]"
 def normalize_text(s: str) -> str:
     s = s.replace("‘", "'")
     s = s.replace("’", "'")
+    s = re.sub(r"\[\d+\]", "", s)
     tokens = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',.?")
     s_list = [x if x in tokens else ADDITIONAL_DIACRITICS.get(x, " ") for x in s]
     s = " ".join("".join(s_list).split()).strip()
