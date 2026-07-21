@@ -8,7 +8,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, GenerationConfig, 
 
 from .data.cosmopedia import filter_fn
 from .data.utils import get_collator
-from .trainer import SpeechLMTrainer
 from .utils import OPTForSpeechLMConfig, SpeechLMTokenizerFast
 
 torch.serialization.add_safe_globals(
@@ -115,7 +114,6 @@ def train(config):
 
     # Model
     # During the first 5k steps, we update only the randomly initialized syllabic token embeddings on speech-only and interleaved data
-    # See Table 6 in https://openreview.net/forum?id=zjaV5zmlkl
     model = AutoModelForCausalLM.from_pretrained(config.model_args.name)
     model.resize_token_embeddings(len(tokenizer), mean_resizing=False)
     model.model.layers.requires_grad_(False)
