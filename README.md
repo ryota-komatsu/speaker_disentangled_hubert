@@ -159,6 +159,17 @@ qsub -g ${GROUP_NAME} scripts/run_speechlm_deepspeed.bash configs/speechlm/defau
 ## Citation
 
 ```bibtex
+@article{Komatsu_SylReg_2026,
+  author    = {Komatsu, Ryota and Kawakita, Kota and Okamoto, Takuma and Shinozaki, Takahiro},
+  title     = {Speaker-Disentangled Chunk-Wise Regression for Syllabic Tokenization},
+  year      = {2026},
+  volume    = {7},
+  journal   = {IEEE Open Journal of Signal Processing},
+  pages     = {800--808},
+}
+```
+
+```bibtex
 @inproceedings{Komatsu_Self-Supervised_Syllable_Discovery_2024,
   author    = {Komatsu, Ryota and Shinozaki, Takahiro},
   title     = {Self-Supervised Syllable Discovery Based on Speaker-Disentangled {HuBERT}},
@@ -167,16 +178,5 @@ qsub -g ${GROUP_NAME} scripts/run_speechlm_deepspeed.bash configs/speechlm/defau
   booktitle = {IEEE Spoken Language Technology Workshop},
   pages     = {1131--1136},
   doi       = {10.1109/SLT61566.2024.10832325},
-}
-```
-
-```bibtex
-@article{Komatsu_SylReg_2026,
-  author    = {Komatsu, Ryota and Kawakita, Kota and Okamoto, Takuma and Shinozaki, Takahiro},
-  title     = {Speaker-Disentangled Chunk-Wise Regression for Syllabic Tokenization},
-  year      = {2026},
-  volume    = {7},
-  journal   = {IEEE Open Journal of Signal Processing},
-  pages     = {},
 }
 ```
