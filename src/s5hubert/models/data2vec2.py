@@ -21,8 +21,8 @@
 # SOFTWARE.
 
 import math
+from collections.abc import Callable
 from types import SimpleNamespace
-from typing import Callable
 
 import torch
 from fairseq.models.wav2vec import ConvFeatureExtractionModel

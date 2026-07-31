@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Optional
 
 import numpy as np
 import torch
@@ -76,7 +76,7 @@ class SylRegForSyllableDiscovery(PreTrainedModel):
         self,
         input_values: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-    ) -> List[Dict[str, torch.Tensor]]:
+    ) -> list[dict[str, torch.Tensor]]:
         """
         Args:
             input_values (`torch.FloatTensor` of shape `(batch_size, sequence_length)`):

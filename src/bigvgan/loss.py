@@ -4,12 +4,10 @@
 # Adapted from https://github.com/jik876/hifi-gan under the MIT license.
 #   LICENSE is in incl_licenses directory.
 
-
 import functools
 import math
-import typing
 from collections import namedtuple
-from typing import List, Tuple
+from collections.abc import Callable
 
 import torch
 import torch.nn as nn
@@ -25,11 +23,11 @@ class MultiScaleMelSpectrogramLoss(nn.Module):
 
     Parameters
     ----------
-    n_mels : List[int]
+    n_mels : list[int]
         Number of mels per STFT, by default [5, 10, 20, 40, 80, 160, 320],
-    window_lengths : List[int], optional
+    window_lengths : list[int], optional
         Length of each window of each STFT, by default [32, 64, 128, 256, 512, 1024, 2048]
-    loss_fn : typing.Callable, optional
+    loss_fn : Callable, optional
         How to compare each loss, by default nn.L1Loss()
     clamp_eps : float, optional
         Clamp on the log magnitude, below, by default 1e-5
@@ -51,17 +49,17 @@ class MultiScaleMelSpectrogramLoss(nn.Module):
     def __init__(
         self,
         sampling_rate: int,
-        n_mels: List[int] = [5, 10, 20, 40, 80, 160, 320],
-        window_lengths: List[int] = [32, 64, 128, 256, 512, 1024, 2048],
-        loss_fn: typing.Callable = nn.L1Loss(),
+        n_mels: list[int] = [5, 10, 20, 40, 80, 160, 320],
+        window_lengths: list[int] = [32, 64, 128, 256, 512, 1024, 2048],
+        loss_fn: Callable = nn.L1Loss(),
         clamp_eps: float = 1e-5,
         mag_weight: float = 0.0,
         log_weight: float = 1.0,
         pow: float = 1.0,
         weight: float = 1.0,
         match_stride: bool = False,
-        mel_fmin: List[float] = [0, 0, 0, 0, 0, 0, 0],
-        mel_fmax: List[float] = [None, None, None, None, None, None, None],
+        mel_fmin: list[float] = [0, 0, 0, 0, 0, 0, 0],
+        mel_fmax: list[float] = [None, None, None, None, None, None, None],
         window_type: str = "hann",
     ):
         super().__init__()
@@ -200,7 +198,7 @@ class MultiScaleMelSpectrogramLoss(nn.Module):
 
 
 # Loss functions
-def feature_loss(fmap_r: List[List[torch.Tensor]], fmap_g: List[List[torch.Tensor]]) -> torch.Tensor:
+def feature_loss(fmap_r: list[list[torch.Tensor]], fmap_g: list[list[torch.Tensor]]) -> torch.Tensor:
     loss = 0
     for dr, dg in zip(fmap_r, fmap_g):
         for rl, gl in zip(dr, dg):
@@ -210,8 +208,8 @@ def feature_loss(fmap_r: List[List[torch.Tensor]], fmap_g: List[List[torch.Tenso
 
 
 def discriminator_loss(
-    disc_real_outputs: List[torch.Tensor], disc_generated_outputs: List[torch.Tensor]
-) -> Tuple[torch.Tensor, List[torch.Tensor], List[torch.Tensor]]:
+    disc_real_outputs: list[torch.Tensor], disc_generated_outputs: list[torch.Tensor]
+) -> tuple[torch.Tensor, list[torch.Tensor], list[torch.Tensor]]:
     loss = 0
     r_losses = []
     g_losses = []
@@ -226,8 +224,8 @@ def discriminator_loss(
 
 
 def generator_loss(
-    disc_outputs: List[torch.Tensor],
-) -> Tuple[torch.Tensor, List[torch.Tensor]]:
+    disc_outputs: list[torch.Tensor],
+) -> tuple[torch.Tensor, list[torch.Tensor]]:
     loss = 0
     gen_losses = []
     for dg in disc_outputs:

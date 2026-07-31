@@ -1,7 +1,7 @@
 import glob
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import librosa
 import torch
@@ -12,7 +12,7 @@ from ..bigvgan.data import mel_spectrogram
 from ..s5hubert import SylRegForSyllableDiscovery
 
 
-def truncate(example: Dict[str, Any], max_frames: int = 512) -> Dict[str, Any]:
+def truncate(example: dict[str, Any], max_frames: int = 512) -> dict[str, Any]:
     if example["spectrogram"].shape[0] < max_frames:
         return example
 
@@ -36,7 +36,7 @@ def truncate(example: Dict[str, Any], max_frames: int = 512) -> Dict[str, Any]:
 
 
 def get_collate_fn(pad_token_id: int = 16384):
-    def collate_fn(batch) -> Dict[str, Any]:
+    def collate_fn(batch) -> dict[str, Any]:
         batch = [truncate(item) for item in batch]
 
         input_ids = [item["units"] for item in batch]

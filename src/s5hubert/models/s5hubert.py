@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import torch
@@ -146,7 +146,7 @@ class S5Hubert(nn.Module):
         self,
         input_values: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-    ) -> Tuple[Tuple[torch.Tensor], Optional[torch.Tensor]]:
+    ) -> tuple[tuple[torch.Tensor], Optional[torch.Tensor]]:
         extract_features = self.student.feature_extractor(input_values)
         extract_features = extract_features.transpose(1, 2)
 
@@ -191,7 +191,7 @@ class S5Hubert(nn.Module):
         self,
         input_values: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-    ) -> Tuple[Tuple[torch.Tensor], Optional[torch.Tensor]]:
+    ) -> tuple[tuple[torch.Tensor], Optional[torch.Tensor]]:
         extract_features = self.student.feature_extractor(input_values)
         extract_features = extract_features.transpose(1, 2)
 
@@ -321,7 +321,7 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
         self,
         input_values: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         extract_features = self.hubert.feature_extractor(input_values)
         extract_features = extract_features.transpose(1, 2)
 
@@ -363,7 +363,7 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
         self,
         input_values: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
-    ) -> List[Dict[str, torch.Tensor]]:
+    ) -> list[dict[str, torch.Tensor]]:
         """
         Args:
             input_values (`torch.FloatTensor` of shape `(batch_size, sequence_length)`):
@@ -493,8 +493,8 @@ class S5HubertForSelfSegmentation(nn.Module):
 
     def forward(
         self,
-        teacher_input_values: List[torch.Tensor],
-        student_input_values: List[torch.Tensor],
+        teacher_input_values: list[torch.Tensor],
+        student_input_values: list[torch.Tensor],
         **kwargs,
     ) -> ModelOutput:
         with torch.no_grad():

@@ -1,6 +1,5 @@
 import re
 from pathlib import Path
-from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -17,7 +16,7 @@ from .utils import calc_auto_bleu
 
 def get_evaluator(model, processing_class):
     @torch.inference_mode()
-    def evaluator(batch: Dict[str, list]):
+    def evaluator(batch: dict[str, list]):
         pos_units = ["".join(f"<{unit}>" for unit in pair["pos"]) for pair in batch["units"]]
         neg_units = ["".join(f"<{unit}>" for unit in pair["neg"]) for pair in batch["units"]]
         units = pos_units + neg_units

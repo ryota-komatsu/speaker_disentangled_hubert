@@ -2,7 +2,7 @@ import glob
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,7 @@ single_word_pattern = re.compile(r"^\w+$", re.IGNORECASE)
 
 
 def get_collator(tokenizer, max_length: int = 128, speech_segment_prob: float = 0.4):
-    def collator(batch) -> Dict[str, Any]:
+    def collator(batch) -> dict[str, Any]:
         inputs = []
         for item in batch:
             # text-only
@@ -211,9 +211,9 @@ class ForcedAligner:
 
         return word
 
-    def split_segment_with_chinese(self, seg: str) -> List[str]:
-        tokens: List[str] = []
-        buf: List[str] = []
+    def split_segment_with_chinese(self, seg: str) -> list[str]:
+        tokens: list[str] = []
+        buf: list[str] = []
 
         def flush_buf():
             nonlocal buf
@@ -231,8 +231,8 @@ class ForcedAligner:
         flush_buf()
         return tokens
 
-    def tokenize_space_lang_punctuation(self, text: str) -> List[str]:
-        tokens: List[str] = []
+    def tokenize_space_lang_punctuation(self, text: str) -> list[str]:
+        tokens: list[str] = []
         for seg in text.split():
             cleaned = self.clean_token_punctuation(seg)
             if cleaned:
@@ -240,7 +240,7 @@ class ForcedAligner:
         return tokens
 
     @torch.inference_mode()
-    def __call__(self, input_values: torch.Tensor, text: str) -> List[Dict[str, Any]]:
+    def __call__(self, input_values: torch.Tensor, text: str) -> list[dict[str, Any]]:
         # Step 1: Prepare alignment inputs
         inputs, word_lists = self.processor.prepare_forced_aligner_inputs(
             audio=input_values.squeeze(0).numpy(),
@@ -274,7 +274,7 @@ class ForcedAligner:
         return aligned_text
 
 
-def add_aligned_units(example: Dict[str, Any]) -> Dict[str, Any]:
+def add_aligned_units(example: dict[str, Any]) -> dict[str, Any]:
     if not example["aligned_text"]:
         example["aligned_units"] = []
         return example

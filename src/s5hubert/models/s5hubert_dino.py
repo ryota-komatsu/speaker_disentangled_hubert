@@ -15,8 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Tuple
-
 import torch
 from torch import nn
 from transformers import AutoConfig, AutoModel
@@ -121,7 +119,7 @@ class S5HubertDino(nn.Module):
         self,
         input_values: torch.Tensor,
         attention_mask: torch.Tensor | None = None,
-    ) -> Tuple[Tuple[torch.Tensor], torch.Tensor | None]:
+    ) -> tuple[tuple[torch.Tensor], torch.Tensor | None]:
         extract_features = self.student.feature_extractor(input_values)
         extract_features = extract_features.transpose(1, 2)
 
@@ -172,7 +170,7 @@ class S5HubertDino(nn.Module):
         self,
         input_values: torch.Tensor,
         attention_mask: torch.Tensor | None = None,
-    ) -> Tuple[Tuple[torch.Tensor], torch.Tensor | None]:
+    ) -> tuple[tuple[torch.Tensor], torch.Tensor | None]:
         extract_features = self.student.feature_extractor(input_values)
         extract_features = extract_features.transpose(1, 2)
 

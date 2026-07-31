@@ -1,7 +1,7 @@
 import os
 import random
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import librosa
 import numpy as np
@@ -34,7 +34,7 @@ class LibriSpeech(torchaudio.datasets.LIBRISPEECH):
         self.max_sample_size = max_sample_size
         self.perturb = perturb
 
-    def __getitem__(self, n: int) -> Dict[str, Any]:
+    def __getitem__(self, n: int) -> dict[str, Any]:
         metadata = self.get_metadata(n)
         teacher_input_values = _load_waveform(os.path.join(self._archive, metadata[0]))
 
@@ -62,7 +62,7 @@ class LibriSpeech(torchaudio.datasets.LIBRISPEECH):
         return np.clip(student_input_values, -1.0, 1.0)
 
     @staticmethod
-    def collate_fn(batch) -> Dict[str, torch.Tensor]:
+    def collate_fn(batch) -> dict[str, torch.Tensor]:
         teacher_input_values = [item["teacher_input_values"] for item in batch]
         student_input_values = [item["student_input_values"] for item in batch]
 
@@ -85,7 +85,7 @@ class LibriSpeech(torchaudio.datasets.LIBRISPEECH):
         }
 
     @staticmethod
-    def collate_fn2(batch) -> Dict[str, torch.Tensor]:
+    def collate_fn2(batch) -> dict[str, torch.Tensor]:
         teacher_input_values = [item["teacher_input_values"].unsqueeze(0) for item in batch]
         student_input_values = [item["student_input_values"].unsqueeze(0) for item in batch]
         return {
@@ -108,7 +108,7 @@ class LibriLight(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.paths)
 
-    def __getitem__(self, n: int) -> Dict[str, Any]:
+    def __getitem__(self, n: int) -> dict[str, Any]:
         teacher_input_values = _load_waveform(self.paths[n])
 
         if self.max_sample_size is not None:
@@ -131,7 +131,7 @@ class LibriLight(torch.utils.data.Dataset):
         return np.clip(student_input_values, -1.0, 1.0)
 
     @staticmethod
-    def collate_fn(batch) -> Dict[str, torch.Tensor]:
+    def collate_fn(batch) -> dict[str, torch.Tensor]:
         teacher_input_values = [item["teacher_input_values"] for item in batch]
         student_input_values = [item["student_input_values"] for item in batch]
 

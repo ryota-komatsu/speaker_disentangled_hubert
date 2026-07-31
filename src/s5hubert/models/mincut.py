@@ -32,7 +32,7 @@
 
 from functools import partial
 from multiprocessing import Pool
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import torch
@@ -45,7 +45,7 @@ def mincut_dp_torch(
     num_syllables: torch.Tensor,
     min_duration: int,
     max_duration: int,
-) -> List[List[int]]:
+) -> list[list[int]]:
     """
     Args:
         W (`torch.FloatTensor` of shape `(batch_size, sequence_length, sequence_length)`):
@@ -123,7 +123,7 @@ def mincut_torch(
     min_duration: int = 3,
     max_duration: int = 35,
     norm: bool = False,
-) -> Tuple[List[torch.Tensor], List[torch.Tensor], List[torch.Tensor]]:
+) -> tuple[list[torch.Tensor], list[torch.Tensor], list[torch.Tensor]]:
     """
     A computationally efficient PyTorch implementation of the exact minimum cut algorithm
 
@@ -256,7 +256,7 @@ def mincut_numpy(
     merge_threshold: Optional[float] = 0.7,
     min_duration: int = 3,
     max_duration: int = 35,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     num_syllable = int(np.ceil(len(hidden_states) * sec_per_frame / sec_per_syllable))
 
     ssm = hidden_states @ hidden_states.T

@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -10,12 +9,12 @@ from transformers import TrainerCallback
 
 
 class EvaluationCallback(TrainerCallback):
-    def __init__(self, eval_dataset: Dict[str, DatasetDict]):
+    def __init__(self, eval_dataset: dict[str, DatasetDict]):
         self.eval_dataset = eval_dataset
 
     def get_evaluator(self, model, processing_class):
         @torch.inference_mode()
-        def evaluator(batch: Dict[str, list]):
+        def evaluator(batch: dict[str, list]):
             pos_units = ["".join(f"<{unit}>" for unit in pair["pos"]) for pair in batch["units"]]
             neg_units = ["".join(f"<{unit}>" for unit in pair["neg"]) for pair in batch["units"]]
             units = pos_units + neg_units
