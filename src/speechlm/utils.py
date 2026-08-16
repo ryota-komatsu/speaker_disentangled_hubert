@@ -107,7 +107,7 @@ def plot_results():
     plt.annotate("Moshi", (0.65 * 2.9 * 10**22, 60.8), fontsize=14)
     plt.annotate("SylReg-LM", (0.65 * 1.3 * 10**21, 67.1), fontsize=14)
 
-    plt.xlabel("Compute (FLOPs)", fontsize=16)
+    plt.xlabel("Training compute (FLOPs)", fontsize=16)
     plt.ylabel("Spoken StoryCloze (%)", fontsize=16)
 
     plt.xticks(fontsize=14)

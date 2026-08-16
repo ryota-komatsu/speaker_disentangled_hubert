@@ -15,6 +15,8 @@ This is the official repository of the IEEE SLT 2024 paper [Self-Supervised Syll
 
 ## Results
 
+Outperformed Z.ai GLM-4-Voice by 5% in semantic understanding while using 42× less training compute
+
 ![](docs/figures/results.png)
 
 ## Usage: Syllabic tokenization for speech language models
@@ -26,12 +28,11 @@ import re
 
 import torch
 import torchaudio
+from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from src.flow_matching import FlowMatchingWithBigVGan
 from src.s5hubert import SylRegForSyllableDiscovery
-
-wav_path = "/path/to/wav"
 
 # download pretrained models from hugging face hub
 encoder = SylRegForSyllableDiscovery.from_pretrained("ryota-komatsu/SylReg-Distill", device_map="cuda", dtype="auto")
@@ -40,12 +41,15 @@ speechlm = AutoModelForCausalLM.from_pretrained("ryota-komatsu/SylReg-LM-7B-Inst
 tokenizer = AutoTokenizer.from_pretrained("ryota-komatsu/SylReg-LM-7B-Instruct")
 
 # load a waveform
-waveform, sr = torchaudio.load(wav_path)
-waveform = torchaudio.functional.resample(waveform, sr, 16000)
+dataset = load_dataset("fixie-ai/llama-questions", split="test")
+dataset = dataset.with_format("torch")
+input_values, sr = dataset[0]["audio"]["array"].unsqueeze(0), dataset[0]["audio"]["sampling_rate"]  # (1, T), int
+input_values = torchaudio.functional.resample(input_values, sr, 16000)
 
 # encode a waveform into syllabic units
-outputs = encoder(waveform.to(encoder.device))
+outputs = encoder(input_values.to(encoder.device))
 units = outputs[0]["units"]  # [3950, 67, ..., 503]
+input_len = len(units)
 
 # speech language modeling
 messages = [
@@ -63,15 +67,25 @@ generated_ids = speechlm.generate(input_ids=input_ids, do_sample=True, temperatu
 
 units = tokenizer.decode(generated_ids)
 units = torch.tensor([int(unit) for unit in re.findall(r"<(\d+)>", units)], device=decoder.device)
+units = units[input_len:]
 
 # unit-to-speech synthesis
-generated_speech = decoder(units.unsqueeze(0)).waveform.cpu()
+generated_speech = decoder(units.unsqueeze(0)).waveform.cpu()  # (1, T)
+
+torchaudio.save("input.wav", input_values, 16000)
+torchaudio.save("output.wav", generated_speech, 16000)
 ```
 
 ## Demo
 
 - Speech resynthesis examples are available on the [project page](https://ryota-komatsu.github.io/speaker_disentangled_hubert).
 - [Hugging Face gradio demo](https://huggingface.co/spaces/ryota-komatsu/SylReg)
+- Local demo based on FastAPI
+
+```bash
+fastapi run app_server.py
+python app_client.py
+```
 
 ## Models
 
@@ -79,15 +93,18 @@ You can download pretrained models from [Hugging Face](https://huggingface.co/co
 
 ## Setup
 
+We recommend [Miniforge](https://github.com/conda-forge/miniforge) for virtual environments, as faiss-gpu is available only through conda, and Miniforge is free for commercial use.
+
 ```shell
 sudo apt install git-lfs  # for UTMOS
 
 # fairseq does not support python 3.11+
 # omegaconf 2.0.6 has a non-standard dependency specifier PyYAML>=5.1.*. pip 24.1 will enforce this behaviour change.
 # pin to setuptools=81.0.0 See https://github.com/tensorflow/tensorboard/issues/7003
-conda create -y -n py310 -c pytorch -c nvidia -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2
+conda create -y -n py310 -c pytorch -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2 uv sox
 conda activate py310
-pip install -r requirements/requirements.txt
+export UV_PROJECT_ENVIRONMENT=$CONDA_PREFIX
+uv pip install -r requirements/requirements.txt
 
 sh scripts/setup.sh
 ```
