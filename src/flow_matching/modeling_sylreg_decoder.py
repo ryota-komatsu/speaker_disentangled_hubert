@@ -334,7 +334,7 @@ class RotaryEmbedding(Qwen3RotaryEmbedding):
     @staticmethod
     def compute_default_rope_parameters(
         config: FlowMatchingConfig, device=None, **kwargs
-    ) -> tuple["torch.Tensor", float]:
+    ) -> tuple[torch.Tensor, float]:
         """
         Computes the inverse frequencies according to the original RoPE implementation
         Args:

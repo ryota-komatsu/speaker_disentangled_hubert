@@ -9,7 +9,6 @@ dataset:
 
 model_args:
   name: "Qwen/Qwen2.5-7B"
-  defrost_steps: 5000
 
 training_args:
   output_dir: "models/speechlm"

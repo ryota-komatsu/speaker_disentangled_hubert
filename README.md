@@ -98,16 +98,19 @@ We recommend [Miniforge](https://github.com/conda-forge/miniforge) for virtual e
 ```shell
 sudo apt install git-lfs  # for UTMOS
 
-# fairseq does not support python 3.11+
-# omegaconf 2.0.6 has a non-standard dependency specifier PyYAML>=5.1.*. pip 24.1 will enforce this behaviour change.
-# pin to setuptools=81.0.0 See https://github.com/tensorflow/tensorboard/issues/7003
-conda create -y -n py310 -c pytorch -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2 uv sox
+conda create -y -n py310 -c pytorch -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2 uv sox cuda-toolkit
 conda activate py310
 export UV_PROJECT_ENVIRONMENT=$CONDA_PREFIX
 uv pip install -r requirements/requirements.txt
 
 sh scripts/setup.sh
 ```
+
+> [!NOTE]
+> - fairseq does not support python 3.11+
+> - omegaconf 2.0.6 has a non-standard dependency specifier PyYAML>=5.1.*. pip 24.1 will enforce this behaviour change.
+> - pin to setuptools=81.0.0 See https://github.com/tensorflow/tensorboard/issues/7003
+> - install cuda-toolkit for MissingCUDAException: CUDA_HOME does not exist, unable to compile CUDA op(s)
 
 ## Data Preparation
 
