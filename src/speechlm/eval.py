@@ -155,6 +155,7 @@ def evaluate(config):
         "sBLIMP": load_dataset(config.dataset.name, "sBLIMP"),
         "tSC": load_dataset(config.dataset.name, "tSC"),
         "sSC": load_dataset(config.dataset.name, "sSC"),
+        "SALMon_sentiment_alignment": load_dataset(config.dataset.name, "SALMon_sentiment_alignment"),
         "generation": load_dataset("audiofolder", data_dir=config.dataset.eval_dir).with_format("torch"),
     }
 
@@ -165,6 +166,9 @@ def evaluate(config):
     sBLIMP = eval_dataset["sBLIMP"]["test"].map(evaluator.evaluate_understanding, **map_kwargs)
     tSC = eval_dataset["tSC"]["test"].map(evaluator.evaluate_understanding, **map_kwargs)
     sSC = eval_dataset["sSC"]["test"].map(evaluator.evaluate_understanding, **map_kwargs)
+    SALMon_sentiment_alignment = eval_dataset["SALMon_sentiment_alignment"]["test"].map(
+        evaluator.evaluate_understanding, **map_kwargs
+    )
     generation = eval_dataset["generation"]["train"].map(evaluator.evaluate_generation)
 
     # 4. save results
@@ -173,6 +177,7 @@ def evaluate(config):
         "sBLIMP": np.mean(sBLIMP["metrics"]),
         "tSC": np.mean(tSC["metrics"]),
         "sSC": np.mean(sSC["metrics"]),
+        "SALMon_sentiment_alignment": np.mean(SALMon_sentiment_alignment["metrics"]),
         "perplexity": np.float64(generation["nll"].mean().exp().item()),
         "auto-bleu": np.float64(generation["auto-bleu"].mean().item()),
     }

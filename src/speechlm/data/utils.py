@@ -139,6 +139,20 @@ def tokenize_storycloze(encoder, SC_dir):
     return Dataset.from_list(SC_test)
 
 
+class SALMonTokenizer:
+    def __init__(self, encoder: SylRegForSyllableDiscovery):
+        self.encoder = encoder
+
+    def __call__(self, example: dict[str, Any]) -> dict[str, Any]:
+        pos_outputs = self.encoder(example["positive_audio"]["array"].unsqueeze(0).to(self.encoder.device))
+        neg_outputs = self.encoder(example["negative_audio"]["array"].unsqueeze(0).to(self.encoder.device))
+        example["units"] = {
+            "pos": pos_outputs[0]["units"].tolist(),
+            "neg": neg_outputs[0]["units"].tolist(),
+        }
+        return example
+
+
 def tokenize_eval(config):
     tqdm.pandas()
 
@@ -191,6 +205,14 @@ def tokenize_eval(config):
     sblimp.push_to_hub(config.dataset.name, "sBLIMP")
     tSC.push_to_hub(config.dataset.name, "tSC")
     sSC.push_to_hub(config.dataset.name, "sSC")
+
+    # SALMon
+    salmon_tokenizer = SALMonTokenizer(encoder)
+    sentiment_alignment = load_dataset("slprl/SALMon", "sentiment_alignment", split="train")
+    sentiment_alignment = sentiment_alignment.with_format("torch")
+    sentiment_alignment = sentiment_alignment.map(salmon_tokenizer)
+    sentiment_alignment = sentiment_alignment.with_format(None)
+    sentiment_alignment.push_to_hub(config.dataset.name, "SALMon_sentiment_alignment", split="test")
 
 
 class ForcedAligner:

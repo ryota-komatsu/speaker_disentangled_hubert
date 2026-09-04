@@ -79,12 +79,16 @@ class EvaluationCallback(TrainerCallback):
         sBLIMP = self.eval_dataset["sBLIMP"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
         tSC = self.eval_dataset["tSC"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
         sSC = self.eval_dataset["sSC"]["test"].map(self.get_evaluator(model, processing_class), **map_kwargs)
+        SALMon_sentiment_alignment = self.eval_dataset["SALMon_sentiment_alignment"]["test"].map(
+            self.get_evaluator(model, processing_class), **map_kwargs
+        )
 
         results = {
             "sWUGGY": np.mean(sWUGGY["metrics"]),
             "sBLIMP": np.mean(sBLIMP["metrics"]),
             "tSC": np.mean(tSC["metrics"]),
             "sSC": np.mean(sSC["metrics"]),
+            "SALMon_sentiment_alignment": np.mean(SALMon_sentiment_alignment["metrics"]),
         }
         pd.DataFrame.from_dict(results, orient="index").to_csv(
             Path(args.output_dir) / f"score_test_{state.global_step}.csv"
