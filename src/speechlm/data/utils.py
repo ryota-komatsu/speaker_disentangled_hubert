@@ -10,7 +10,7 @@ import torch
 import torchaudio
 from datasets import Dataset, DatasetDict, load_dataset
 from tqdm import tqdm
-from transformers import AutoModelForTokenClassification, AutoProcessor
+from transformers import AutoModelForMultimodalLM, AutoModelForTokenClassification, AutoProcessor
 from transformers.models.qwen3_asr.processing_qwen3_asr import _is_cjk_char, _is_kept_char
 
 from ...s5hubert import SylRegForSyllableDiscovery
@@ -216,11 +216,19 @@ def tokenize_eval(config):
 
 
 class ForcedAligner:
-    def __init__(self, aligner_name: str = "Qwen/Qwen3-ForcedAligner-0.6B-hf"):
+    def __init__(
+        self,
+        aligner_name: str = "Qwen/Qwen3-ForcedAligner-0.6B-hf",
+        asr_name: str | None = None,  # "Qwen/Qwen3-ASR-1.7B-hf"
+        language: str = "English",
+    ):
         self.processor = AutoProcessor.from_pretrained(aligner_name)
-        self.model = AutoModelForTokenClassification.from_pretrained(
+        self.aligner = AutoModelForTokenClassification.from_pretrained(
             aligner_name, dtype=torch.bfloat16, device_map="auto"
         )
+        if asr_name is not None:
+            self.asr = AutoModelForMultimodalLM.from_pretrained(asr_name, dtype=torch.bfloat16, device_map="auto")
+        self.language = language
 
     def clean_token_punctuation(self, token: str) -> str:
         word = "".join(ch for ch in token if _is_kept_char(ch))
@@ -253,47 +261,77 @@ class ForcedAligner:
         flush_buf()
         return tokens
 
-    def tokenize_space_lang_punctuation(self, text: str) -> list[str]:
-        tokens: list[str] = []
-        for seg in text.split():
-            cleaned = self.clean_token_punctuation(seg)
-            if cleaned:
-                tokens.extend(self.split_segment_with_chinese(cleaned))
-        return tokens
+    def tokenize_space_lang_punctuation(self, text: str) -> list[list[str]]:
+        if isinstance(text, str):
+            texts = [text]
+
+        batch_tokens = []
+
+        for text in texts:
+            tokens: list[str] = []
+            for seg in text.split():
+                cleaned = self.clean_token_punctuation(seg)
+                if cleaned:
+                    tokens.extend(self.split_segment_with_chinese(cleaned))
+            batch_tokens.append(tokens)
+        return batch_tokens
 
     @torch.inference_mode()
-    def __call__(self, input_values: torch.Tensor, text: str) -> list[dict[str, Any]]:
+    def transcribe(self, input_values: torch.Tensor) -> str:
+        inputs = self.processor.apply_transcription_request(
+            audio=input_values.squeeze(0).numpy(),
+            language=self.language,
+        )
+        inputs = inputs.to(self.asr.device, self.asr.dtype)
+        output_ids = self.asr.generate(**inputs)
+        generated_ids = output_ids[:, inputs["input_ids"].shape[1] :]
+        text = self.processor.decode(generated_ids, skip_special_tokens=True)
+        text = self.processor.extract_transcription(text)
+        return text[0]
+
+    @torch.inference_mode()
+    def align(self, input_values: torch.Tensor, text: str) -> list[dict[str, Any]]:
         # Step 1: Prepare alignment inputs
         inputs, word_lists = self.processor.prepare_forced_aligner_inputs(
             audio=input_values.squeeze(0).numpy(),
             transcript=text,
             language="English",
         )
-        inputs = inputs.to(self.model.device, self.model.dtype)
+        inputs = inputs.to(self.aligner.device, self.aligner.dtype)
 
         # Step 2: Run forced aligner
-        aligner_outputs = self.model(**inputs)
+        aligner_outputs = self.aligner(**inputs)
 
         # Step 3: Decode timestamps
-        timestamps = self.processor.decode_forced_alignment(
+        batch_timestamps = self.processor.decode_forced_alignment(
             logits=aligner_outputs.logits,
             input_ids=inputs["input_ids"],
             word_lists=word_lists,
-            timestamp_token_id=self.model.config.timestamp_token_id,
-        )[0]
+            timestamp_token_id=self.aligner.config.timestamp_token_id,
+        )
 
         word_lists_punctuation = self.tokenize_space_lang_punctuation(text)
-        assert len(word_lists) == len(word_lists_punctuation)
+        for word_list, word_list_punctuation in zip(word_lists, word_lists_punctuation, strict=True):
+            assert len(word_list) == len(word_list_punctuation)
 
         aligned_text = [
-            {
-                "start_time": item["start_time"],
-                "end_time": item["end_time"],
-                "word": " " + word,  # prepend a space for concatenation. See Line 300.
-            }
-            for item, word in zip(timestamps, word_lists_punctuation, strict=True)
+            [
+                {
+                    "start_time": item["start_time"],
+                    "end_time": item["end_time"],
+                    "word": " " + word,  # prepend a space for concatenation. See Line 300.
+                }
+                for item, word in zip(timestamps, word_list_punctuation, strict=True)
+            ]
+            for timestamps, word_list_punctuation in zip(batch_timestamps, word_lists_punctuation, strict=True)
         ]
-        return aligned_text
+        return aligned_text[0]
+
+    @torch.inference_mode()
+    def __call__(self, input_values: torch.Tensor, text: str | None = None) -> list[dict[str, Any]]:
+        if text is None:
+            text = self.transcribe(input_values)
+        return self.align(input_values, text)
 
 
 def add_aligned_units(example: dict[str, Any]) -> dict[str, Any]:

@@ -100,6 +100,7 @@ sudo apt install git-lfs  # for UTMOS
 
 conda create -y -n py310 -c pytorch -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2 uv sox cuda-toolkit
 conda activate py310
+
 export UV_PROJECT_ENVIRONMENT=$CONDA_PREFIX
 uv pip install -r requirements/requirements.txt
 
