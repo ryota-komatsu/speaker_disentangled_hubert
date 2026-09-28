@@ -50,7 +50,7 @@ def tokenize_tinystories(
                     "id": id_,
                     "units": outputs[0]["units"].tolist(),
                     "durations": outputs[0]["durations"].tolist(),
-                    "aligned_text": aligner(input_values, gs),
+                    "aligned_text": aligner(input_values.squeeze(0).numpy(), gs)[0],
                 }
                 example = add_aligned_units(example)
                 json.dump(example, f)

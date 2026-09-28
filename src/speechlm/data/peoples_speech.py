@@ -60,7 +60,7 @@ def tokenize_clean(
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "aligned_text": aligner(input_values, example["text"]),
+                "aligned_text": aligner(input_values.squeeze(0).numpy(), example["text"])[0],
             }
             example = add_aligned_units(example)
             json.dump(example, f)
@@ -96,7 +96,7 @@ def tokenize_clean_sa(
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "aligned_text": aligner(input_values, example["text"]),
+                "aligned_text": aligner(input_values.squeeze(0).numpy(), example["text"])[0],
             }
             example = add_aligned_units(example)
             json.dump(example, f)

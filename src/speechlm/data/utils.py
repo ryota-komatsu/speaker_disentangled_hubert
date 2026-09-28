@@ -261,10 +261,7 @@ class ForcedAligner:
         flush_buf()
         return tokens
 
-    def tokenize_space_lang_punctuation(self, text: str) -> list[list[str]]:
-        if isinstance(text, str):
-            texts = [text]
-
+    def tokenize_space_lang_punctuation(self, texts: list[str]) -> list[list[str]]:
         batch_tokens = []
 
         for text in texts:
@@ -277,9 +274,9 @@ class ForcedAligner:
         return batch_tokens
 
     @torch.inference_mode()
-    def transcribe(self, input_values: torch.Tensor) -> str:
+    def transcribe(self, input_values: list[np.ndarray]) -> list[str]:
         inputs = self.processor.apply_transcription_request(
-            audio=input_values.squeeze(0).numpy(),
+            audio=input_values,
             language=self.language,
         )
         inputs = inputs.to(self.asr.device, self.asr.dtype)
@@ -287,15 +284,15 @@ class ForcedAligner:
         generated_ids = output_ids[:, inputs["input_ids"].shape[1] :]
         text = self.processor.decode(generated_ids, skip_special_tokens=True)
         text = self.processor.extract_transcription(text)
-        return text[0]
+        return text
 
     @torch.inference_mode()
-    def align(self, input_values: torch.Tensor, text: str) -> list[dict[str, Any]]:
+    def align(self, input_values: list[np.ndarray], text: list[str]) -> list[list[dict[str, Any]]]:
         # Step 1: Prepare alignment inputs
         inputs, word_lists = self.processor.prepare_forced_aligner_inputs(
-            audio=input_values.squeeze(0).numpy(),
+            audio=input_values,
             transcript=text,
-            language="English",
+            language=self.language,
         )
         inputs = inputs.to(self.aligner.device, self.aligner.dtype)
 
@@ -319,17 +316,26 @@ class ForcedAligner:
                 {
                     "start_time": item["start_time"],
                     "end_time": item["end_time"],
-                    "word": " " + word,  # prepend a space for concatenation. See Line 300.
+                    "word": " " + word,  # prepend a space for concatenation. See Line 366.
                 }
                 for item, word in zip(timestamps, word_list_punctuation, strict=True)
             ]
             for timestamps, word_list_punctuation in zip(batch_timestamps, word_lists_punctuation, strict=True)
         ]
-        return aligned_text[0]
+        return aligned_text
 
     @torch.inference_mode()
-    def __call__(self, input_values: torch.Tensor, text: str | None = None) -> list[dict[str, Any]]:
-        if text is None:
+    def __call__(
+        self,
+        input_values: np.ndarray | list[np.ndarray],
+        text: str | list[str] | None = None,
+    ) -> list[list[dict[str, Any]]]:
+        if isinstance(input_values, np.ndarray):
+            input_values = [input_values]
+
+        if isinstance(text, str):
+            text = [text]
+        elif text is None:
             text = self.transcribe(input_values)
         return self.align(input_values, text)
 

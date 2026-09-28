@@ -189,7 +189,7 @@ def tokenize_emilia(
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "aligned_text": aligner(input_values, text),
+                "aligned_text": aligner(input_values.squeeze(0).numpy(), text)[0],
             }
             example = add_aligned_units(example)
             json.dump(example, f)
@@ -236,7 +236,7 @@ def tokenize_yodas(
                 "id": id_,
                 "units": outputs[0]["units"].tolist(),
                 "durations": outputs[0]["durations"].tolist(),
-                "aligned_text": aligner(input_values, text),
+                "aligned_text": aligner(input_values.squeeze(0).numpy(), text)[0],
             }
             example = add_aligned_units(example)
             json.dump(example, f)
