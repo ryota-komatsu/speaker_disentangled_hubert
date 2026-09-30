@@ -160,7 +160,9 @@ class S5HubertDino(nn.Module):
 
             skip_the_layer = True if self.training and (dropout_probability < self.student.config.layerdrop) else False
             if not skip_the_layer:
-                hidden_states = layer(hidden_states, attention_mask=attention_mask)[0]
+                hidden_states = layer(hidden_states, attention_mask=attention_mask)
+                if isinstance(hidden_states, tuple):  # transformers<5.16 returns a tuple
+                    hidden_states = hidden_states[0]
 
         all_hidden_states = all_hidden_states + (hidden_states,)
 
@@ -205,7 +207,9 @@ class S5HubertDino(nn.Module):
 
         for layer in self.teacher_encoder_layers:
             all_hidden_states = all_hidden_states + (hidden_states,)
-            hidden_states = layer(hidden_states, attention_mask=attention_mask)[0]
+            hidden_states = layer(hidden_states, attention_mask=attention_mask)
+            if isinstance(hidden_states, tuple):  # transformers<5.16 returns a tuple
+                hidden_states = hidden_states[0]
 
         all_hidden_states = all_hidden_states + (hidden_states,)
 

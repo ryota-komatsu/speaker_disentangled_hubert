@@ -181,7 +181,9 @@ class S5Hubert(nn.Module):
 
         for layer in self.student.encoder.layers:
             all_hidden_states = all_hidden_states + (hidden_states,)
-            hidden_states = layer(hidden_states, attention_mask=attention_mask)[0]
+            hidden_states = layer(hidden_states, attention_mask=attention_mask)
+            if isinstance(hidden_states, tuple):  # transformers<5.16 returns a tuple
+                hidden_states = hidden_states[0]
 
         all_hidden_states = all_hidden_states + (hidden_states,)
 
@@ -226,7 +228,9 @@ class S5Hubert(nn.Module):
 
         for layer in self.teacher_encoder_layers:
             all_hidden_states = all_hidden_states + (hidden_states,)
-            hidden_states = layer(hidden_states, attention_mask=attention_mask)[0]
+            hidden_states = layer(hidden_states, attention_mask=attention_mask)
+            if isinstance(hidden_states, tuple):  # transformers<5.16 returns a tuple
+                hidden_states = hidden_states[0]
 
         all_hidden_states = all_hidden_states + (hidden_states,)
 
@@ -354,7 +358,9 @@ class S5HubertForSyllableDiscovery(HubertPreTrainedModel):
         hidden_states = self.hubert.encoder.layer_norm(hidden_states)
 
         for layer in self.hubert.encoder.layers[: self.segmentation_layer]:
-            hidden_states = layer(hidden_states, attention_mask=attention_mask)[0]
+            hidden_states = layer(hidden_states, attention_mask=attention_mask)
+            if isinstance(hidden_states, tuple):  # transformers<5.16 returns a tuple
+                hidden_states = hidden_states[0]
 
         return hidden_states, lengths
 
