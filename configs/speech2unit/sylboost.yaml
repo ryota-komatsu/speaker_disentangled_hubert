@@ -2,9 +2,9 @@ common:
   disable_tqdm: true # set true when using nohup
 
 path:
-  checkpoint: "models/sylboost/SylBoost_625Hz.pth"
-  quantizer1: "models/sylboost/SylBoost_625Hz_kmeans.npy"
-  quantizer2: "models/sylboost/SylBoost_625Hz_agglom.npy"
+  checkpoint: "https://www.cs.utexas.edu/~harwath/model_checkpoints/syllable_lm/SylBoost_625Hz.pth"
+  quantizer1: "https://www.cs.utexas.edu/~harwath/model_checkpoints/syllable_lm/SylBoost_625Hz_kmeans.npy"
+  quantizer2: "https://www.cs.utexas.edu/~harwath/model_checkpoints/syllable_lm/SylBoost_625Hz_agglom.npy"
   segment_dir: "segments/sylboost"
   result: "results/speech2unit/sylboost.json"
 

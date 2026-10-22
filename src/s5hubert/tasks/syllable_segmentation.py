@@ -1,6 +1,8 @@
+import os
 import sys
 from pathlib import Path
 
+import gdown
 import numpy as np
 import torch
 import torchaudio
@@ -27,10 +29,12 @@ def _syllable_segmentation(config):
         sys.path.append("src/SyllableLM")
         from ...SyllableLM.extract_units import SylBoostFeatureReader
 
+        os.environ.setdefault("TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD", "1")
+
         model = SylBoostFeatureReader(
-            config.path.checkpoint,
-            config.path.quantizer1,
-            config.path.quantizer2,
+            gdown.cached_download(url=config.path.checkpoint),
+            gdown.cached_download(url=config.path.quantizer1),
+            gdown.cached_download(url=config.path.quantizer2),
             config.model.model_key,
         )
     elif config.model.model_type == "sylber":

@@ -1,5 +1,7 @@
+import os
 import sys
 
+import gdown
 import numpy as np
 import torch
 from torch.utils.data import ConcatDataset
@@ -41,10 +43,12 @@ def compute_ued(config) -> float:
         sys.path.append("src/SyllableLM")
         from ...SyllableLM.extract_units import SylBoostFeatureReader
 
+        os.environ.setdefault("TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD", "1")
+
         model = SylBoostFeatureReader(
-            config.path.checkpoint,
-            config.path.quantizer1,
-            config.path.quantizer2,
+            gdown.cached_download(url=config.path.checkpoint),
+            gdown.cached_download(url=config.path.quantizer1),
+            gdown.cached_download(url=config.path.quantizer2),
             config.model.model_key,
         )
 

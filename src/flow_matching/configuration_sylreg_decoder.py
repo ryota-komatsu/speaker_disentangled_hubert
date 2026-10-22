@@ -1,4 +1,4 @@
-from transformers import PreTrainedConfig
+from transformers.configuration_utils import PreTrainedConfig, SubConfigSpec
 from transformers.modeling_rope_utils import RopeParameters
 from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
 
@@ -25,20 +25,10 @@ class FlowMatchingConfig(PreTrainedConfig):
 
 class FlowMatchingWithBigVGanConfig(PreTrainedConfig):
     model_type = "flow_matching_with_bigvgan"
-    sub_configs = {"model_config": FlowMatchingConfig, "vocoder_config": Qwen2_5OmniBigVGANConfig}
+    sub_configs_defaults = {
+        "model_config": SubConfigSpec(config_class=FlowMatchingConfig),
+        "vocoder_config": SubConfigSpec(config_class=Qwen2_5OmniBigVGANConfig),
+    }
 
     model_config: dict | PreTrainedConfig | None = None
     vocoder_config: dict | PreTrainedConfig | None = None
-
-    def __post_init__(self, **kwargs):
-        if self.model_config is None:
-            self.model_config = FlowMatchingConfig()
-        elif isinstance(self.model_config, dict):
-            self.model_config = FlowMatchingConfig(**self.model_config)
-
-        if self.vocoder_config is None:
-            self.vocoder_config = Qwen2_5OmniBigVGANConfig()
-        elif isinstance(self.vocoder_config, dict):
-            self.vocoder_config = Qwen2_5OmniBigVGANConfig(**self.vocoder_config)
-
-        super().__post_init__(**kwargs)

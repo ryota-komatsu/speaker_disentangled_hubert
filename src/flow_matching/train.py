@@ -5,27 +5,13 @@ import pandas as pd
 import torch
 from datasets import concatenate_datasets, load_dataset
 from omegaconf import OmegaConf
-from transformers import (
-    AutoConfig,
-    AutoModel,
-    AutoModelForSpeechSeq2Seq,
-    AutoProcessor,
-    Trainer,
-    TrainerCallback,
-    TrainingArguments,
-    pipeline,
-)
-from transformers.models.qwen2_5_omni.configuration_qwen2_5_omni import Qwen2_5OmniBigVGANConfig
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, Trainer, TrainerCallback, TrainingArguments, pipeline
 
 from ..bigvgan.bigvgan import BigVGan
 from .configuration_sylreg_decoder import FlowMatchingConfig
 from .data import get_collate_fn
 from .modeling_sylreg_decoder import FlowMatchingModelV2
 from .utils import get_input_embeddings
-
-# register BigVGan
-AutoConfig.register("bigvgan", Qwen2_5OmniBigVGANConfig)
-AutoModel.register(Qwen2_5OmniBigVGANConfig, BigVGan)
 
 
 class EvaluationCallback(TrainerCallback):
@@ -38,7 +24,7 @@ class EvaluationCallback(TrainerCallback):
     ):
         dtype = torch.float16 if torch.cuda.is_available() else torch.float32
 
-        self.vocoder = AutoModel.from_pretrained(vocoder_model_name_or_path, device_map="cuda")
+        self.vocoder = BigVGan.from_pretrained(vocoder_model_name_or_path, device_map="cuda")
         asr = AutoModelForSpeechSeq2Seq.from_pretrained(
             asr_model_name_or_path,
             dtype=dtype,

@@ -1,3 +1,4 @@
+import os
 import sys
 import warnings
 from pathlib import Path
@@ -11,6 +12,7 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 from ..s5hubert import SylRegForSyllableDiscovery
 from .modeling_sylreg_decoder import FlowMatchingWithBigVGan
 
+os.environ.setdefault("TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD", "1")
 sys.path.append("src/utmos")
 warnings.simplefilter("ignore", FutureWarning)
 warnings.simplefilter("ignore", DeprecationWarning)

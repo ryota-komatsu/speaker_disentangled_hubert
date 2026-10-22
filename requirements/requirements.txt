@@ -7,7 +7,6 @@ fastapi[standard]
 fire
 gdown
 gradio
-hf-xet==1.4.3
 ipykernel==6.29.5
 jiwer==4.0.0
 joblib==1.4.0
@@ -25,7 +24,7 @@ scipy==1.13.1
 soundfile
 tensorboard==2.17.0
 timm
-torch==2.5.1
-torchaudio==2.5.1
-transformers>=5.13.0
+torch==2.8.0
+torchaudio==2.8.0
+transformers>=5.20.0
 trl
