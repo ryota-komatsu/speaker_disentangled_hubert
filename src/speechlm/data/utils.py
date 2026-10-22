@@ -144,8 +144,12 @@ class SALMonTokenizer:
         self.encoder = encoder
 
     def __call__(self, example: dict[str, Any]) -> dict[str, Any]:
-        pos_outputs = self.encoder(example["positive_audio"]["array"].unsqueeze(0).to(self.encoder.device))
-        neg_outputs = self.encoder(example["negative_audio"]["array"].unsqueeze(0).to(self.encoder.device))
+        pos_outputs = self.encoder(
+            torch.as_tensor(example["positive_audio"]["array"], device=self.encoder.device).unsqueeze(0)
+        )
+        neg_outputs = self.encoder(
+            torch.as_tensor(example["negative_audio"]["array"], device=self.encoder.device).unsqueeze(0)
+        )
         example["units"] = {
             "pos": pos_outputs[0]["units"].tolist(),
             "neg": neg_outputs[0]["units"].tolist(),

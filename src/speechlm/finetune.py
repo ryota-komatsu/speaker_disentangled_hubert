@@ -52,7 +52,7 @@ def get_dailytalk_tokenizer(model_name_or_path: str):
         spoken_messages = []
 
         for turn_idx, (text, audio_cut_idx) in enumerate(zip(example["texts"], example["audio_cut_idxs"], strict=True)):
-            input_values = example["audio"]["array"][audio_cut_idx[0] : audio_cut_idx[1]]
+            input_values = torch.as_tensor(example["audio"]["array"])[audio_cut_idx[0] : audio_cut_idx[1]]
             input_values = torchaudio.functional.resample(input_values, example["audio"]["sampling_rate"], 16000)
 
             role = "user" if turn_idx % 2 == 0 else "assistant"

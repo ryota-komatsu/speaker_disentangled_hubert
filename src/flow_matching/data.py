@@ -146,8 +146,8 @@ def get_tokenize_fn(encoder, data_dir, ext_txt: str = ".normalized.txt"):
 
         outputs = encoder(input_values)
 
-        id = str(Path(example["audio"]["path"]).relative_to(data_dir).with_suffix(""))
-        txt_path = Path(example["audio"]["path"]).with_suffix(ext_txt)
+        id = str(Path(example["audio"].metadata.path).relative_to(data_dir).with_suffix(""))
+        txt_path = Path(example["audio"].metadata.path).with_suffix(ext_txt)
 
         transcript = ""
         if txt_path.is_file():

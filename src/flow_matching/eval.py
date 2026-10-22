@@ -32,7 +32,7 @@ def get_eval_fn(encoder, decoder, processor, pipe, scorer, data_dir):
 
     def _evaluate(example):
         # transcript
-        id = Path(example["audio"]["path"]).relative_to(data_dir).with_suffix("")
+        id = Path(example["audio"].metadata.path).relative_to(data_dir).with_suffix("")
         speaker_id, chap_id, utterance_id = str(id).split("/")
         file = data_dir / speaker_id / chap_id / f"{speaker_id}-{chap_id}.trans.txt"
 
@@ -44,7 +44,7 @@ def get_eval_fn(encoder, decoder, processor, pipe, scorer, data_dir):
 
         example["transcript"] = processor.tokenizer.normalize(transcript)
 
-        ref_wav = example["audio"]["array"].unsqueeze(0).to(encoder.device)
+        ref_wav = torch.as_tensor(example["audio"]["array"], device=encoder.device).unsqueeze(0)
         units = encoder(ref_wav)[0]["units"].unsqueeze(0)
         hyp_wav = decoder(units).waveform
         # units = encoder(ref_wav)["units"].unsqueeze(0)
@@ -112,13 +112,13 @@ def evaluate(config):
     dataset = dataset.with_format("torch")
     dataset = dataset.map(get_eval_fn(encoder, decoder, processor, pipe, scorer, data_dir))
 
-    wer_hyp = jiwer.wer(dataset["transcript"], dataset["hyp"]) * 100
-    cer_hyp = jiwer.cer(dataset["transcript"], dataset["hyp"]) * 100
-    mos_hyp = torch.mean(dataset["mos_hyp"]).item()
+    wer_hyp = jiwer.wer(dataset["transcript"][:], dataset["hyp"][:]) * 100
+    cer_hyp = jiwer.cer(dataset["transcript"][:], dataset["hyp"][:]) * 100
+    mos_hyp = torch.mean(dataset["mos_hyp"][:]).item()
 
-    wer_ref = jiwer.wer(dataset["transcript"], dataset["ref"]) * 100
-    cer_ref = jiwer.cer(dataset["transcript"], dataset["ref"]) * 100
-    mos_ref = torch.mean(dataset["mos_ref"]).item()
+    wer_ref = jiwer.wer(dataset["transcript"][:], dataset["ref"][:]) * 100
+    cer_ref = jiwer.cer(dataset["transcript"][:], dataset["ref"][:]) * 100
+    mos_ref = torch.mean(dataset["mos_ref"][:]).item()
 
     framerate = sum(dataset["seq_len"]) / sum(dataset["duration"])
 

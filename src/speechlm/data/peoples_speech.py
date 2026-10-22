@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import torch
 from better_profanity import profanity
 from datasets import Audio, load_dataset
 from tqdm import tqdm
@@ -52,7 +53,7 @@ def tokenize_clean(
 
             id_ = str((Path("clean/train") / example["id"]).with_suffix(""))
 
-            input_values = example["audio"]["array"].unsqueeze(0)
+            input_values = torch.as_tensor(example["audio"]["array"]).unsqueeze(0)
 
             outputs = encoder(input_values.to(encoder.device))
 
@@ -88,7 +89,7 @@ def tokenize_clean_sa(
 
             id_ = str((Path("clean_sa/train") / example["id"]).with_suffix(""))
 
-            input_values = example["audio"]["array"].unsqueeze(0)
+            input_values = torch.as_tensor(example["audio"]["array"]).unsqueeze(0)
 
             outputs = encoder(input_values.to(encoder.device))
 

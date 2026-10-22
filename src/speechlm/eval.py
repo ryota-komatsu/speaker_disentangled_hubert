@@ -104,7 +104,7 @@ class Evaluator:
     ):
         # 1. encode a waveform into syllabic units
         prompt = example["audio"]["array"][: prompt_length * example["audio"]["sampling_rate"]]
-        prompt = prompt.unsqueeze(0).to(self.encoder.device)
+        prompt = torch.as_tensor(prompt, device=self.encoder.device).unsqueeze(0)
         outputs = self.encoder(prompt)
         units = outputs[0]["units"][:-1]  # [3950, 67, ..., 503]
 
@@ -178,8 +178,8 @@ def evaluate(config):
         "tSC": np.mean(tSC["metrics"]),
         "sSC": np.mean(sSC["metrics"]),
         "SALMon_sentiment_alignment": np.mean(SALMon_sentiment_alignment["metrics"]),
-        "perplexity": np.float64(generation["nll"].mean().exp().item()),
-        "auto-bleu": np.float64(generation["auto-bleu"].mean().item()),
+        "perplexity": np.float64(generation["nll"][:].mean().exp().item()),
+        "auto-bleu": np.float64(generation["auto-bleu"][:].mean().item()),
     }
     Path(config.training_args.output_dir).mkdir(parents=True, exist_ok=True)
     pd.DataFrame.from_dict(results, orient="index").to_csv(Path(config.training_args.output_dir) / "score_test.csv")

@@ -1,6 +1,5 @@
-accelerate
 better_profanity
-datasets==3.6.0
+datasets>=4.1.0
 deepspeed==0.18.5
 fairseq==0.12.2
 fastapi[standard]
@@ -13,7 +12,7 @@ joblib==1.4.0
 kokoro
 librosa
 liger-kernel
-lightning==2.5.2
+lightning
 matplotlib==3.8.4
 nltk
 numpy==1.26.4
@@ -21,10 +20,10 @@ pandas==2.2.2
 praat-parselmouth==0.4.6
 scikit-learn==1.5.0
 scipy==1.13.1
-soundfile
 tensorboard==2.17.0
 timm
-torch==2.8.0
-torchaudio==2.8.0
+torch==2.14.1
+torchaudio==2.11.0
+torchcodec==0.17.0
 transformers>=5.20.0
 trl

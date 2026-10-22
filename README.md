@@ -42,8 +42,7 @@ tokenizer = AutoTokenizer.from_pretrained("ryota-komatsu/SylReg-LM-7B-Instruct")
 
 # load a waveform
 dataset = load_dataset("fixie-ai/llama-questions", split="test")
-dataset = dataset.with_format("torch")
-input_values, sr = dataset[0]["audio"]["array"].unsqueeze(0), dataset[0]["audio"]["sampling_rate"]  # (1, T), int
+input_values, sr = torch.as_tensor(dataset[0]["audio"]["array"]).unsqueeze(0), dataset[0]["audio"]["sampling_rate"]
 input_values = torchaudio.functional.resample(input_values, sr, 16000)
 
 # encode a waveform into syllabic units
@@ -98,7 +97,7 @@ We recommend [Miniforge](https://github.com/conda-forge/miniforge) for virtual e
 ```shell
 sudo apt install git-lfs  # for UTMOS
 
-conda create -y -n py310 -c pytorch -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2 uv sox cuda-toolkit
+conda create -y -n py310 -c pytorch -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2 uv ffmpeg cuda-toolkit
 conda activate py310
 
 export UV_PROJECT_ENVIRONMENT=$CONDA_PREFIX

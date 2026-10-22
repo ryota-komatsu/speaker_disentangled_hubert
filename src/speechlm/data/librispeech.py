@@ -1,3 +1,4 @@
+import torch
 from datasets import concatenate_datasets, load_dataset
 
 from ...s5hubert import SylRegForSyllableDiscovery
@@ -9,7 +10,7 @@ def get_map_fn(model_name_or_path: str = "ryota-komatsu/SylReg-Distill"):
     aligner = ForcedAligner()
 
     def map_fn(example):
-        input_values = example["audio"]["array"].unsqueeze(0)
+        input_values = torch.as_tensor(example["audio"]["array"]).unsqueeze(0)
 
         outputs = encoder(input_values.to(encoder.device))
 

@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-import torchaudio
+from torchcodec.decoders import AudioDecoder
 
 from ...sdhubert.utils.syllable import BoundaryDetectionEvaluator, match_cluster
 from ..utils.misc import compute_cluster_purity, compute_mutual_info, compute_syllable_purity, compute_ued
@@ -62,8 +62,8 @@ def evaluate(config):
         # unit frequency
         audio_path = Path(config.dataset.root) / "LibriSpeech" / sample["file_name"]
         audio_path = str(audio_path)
-        metadata = torchaudio.info(audio_path)
-        total_seconds += metadata.num_frames / metadata.sample_rate
+        metadata = AudioDecoder(audio_path).metadata
+        total_seconds += metadata.duration_seconds
         num_units += len(hyp_boundary)
 
     # joint prob

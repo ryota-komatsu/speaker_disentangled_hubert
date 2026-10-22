@@ -26,6 +26,7 @@ import json
 import re
 from pathlib import Path
 
+import torch
 import torchaudio
 from better_profanity import profanity
 from datasets import Array2D, Audio, Features, Sequence, Value, load_dataset
@@ -88,7 +89,6 @@ out_emilia = {
     "EN_B00065_S05725",
     "EN_B00069_S07628",
     "EN_B00083_S03875",
-    "EN_B00071_S07665",
     "EN_B00071_S07665",
     "EN_B00062_S04187",
     "EN_B00065_S09873",
@@ -180,7 +180,7 @@ def tokenize_emilia(
             audio_filepath.parent.mkdir(parents=True, exist_ok=True)
             audio_filepath = str(audio_filepath)
 
-            input_values = example["mp3"]["array"].unsqueeze(0)
+            input_values = torch.as_tensor(example["mp3"]["array"]).unsqueeze(0)
             torchaudio.save(audio_filepath, input_values, 16000, bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
@@ -227,7 +227,7 @@ def tokenize_yodas(
             audio_filepath.parent.mkdir(parents=True, exist_ok=True)
             audio_filepath = str(audio_filepath)
 
-            input_values = example["mp3"]["array"].unsqueeze(0)
+            input_values = torch.as_tensor(example["mp3"]["array"]).unsqueeze(0)
             torchaudio.save(audio_filepath, input_values, 16000, bits_per_sample=16)
 
             outputs = encoder(input_values.to(encoder.device))
