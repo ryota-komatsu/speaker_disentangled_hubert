@@ -79,7 +79,10 @@ def filter_fn(example):
 
 def data(config, num_proc: int = 6):
     dataset = load_dataset(
-        "HuggingFaceTB/smoltalk2", "SFT", split="smoltalk_smollm3_everyday_conversations_no_think", num_proc=num_proc
+        "HuggingFaceTB/smoltalk2",
+        data_files="SFT/smoltalk_smollm3_everyday_conversations_no_think-*.parquet",
+        split="train",
+        num_proc=num_proc,
     )
     dataset = dataset.filter(
         lambda example: not oov_pattern.search("".join(message["content"] for message in example["messages"])),
@@ -92,7 +95,12 @@ def data(config, num_proc: int = 6):
     dataset.push_to_hub(config.dataset.name, "everyday-conversations", split="train")
 
     # OpenHermes
-    dataset = load_dataset("HuggingFaceTB/smoltalk2", "SFT", split="OpenHermes_2.5_no_think", num_proc=num_proc)
+    dataset = load_dataset(
+        "HuggingFaceTB/smoltalk2",
+        data_files="SFT/OpenHermes_2.5_no_think-*.parquet",
+        split="train",
+        num_proc=num_proc,
+    )
     dataset = dataset.filter(filter_fn, num_proc=num_proc)
     dataset = dataset.map(
         get_synthesizer(config.speech2unit.model_name_or_path),
