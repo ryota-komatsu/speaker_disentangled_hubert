@@ -454,6 +454,7 @@ class S5HubertForSelfSegmentation(nn.Module):
         min_duration: int = 3,
         max_duration: int = 35,
     ):
+        super().__init__()
         config = AutoConfig.from_pretrained(
             model_name_or_path,
             num_hidden_layers=8,

@@ -97,10 +97,9 @@ We recommend [Miniforge](https://github.com/conda-forge/miniforge) for virtual e
 ```shell
 sudo apt install git-lfs  # for UTMOS
 
-conda create -y -n py310 -c pytorch -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2 uv ffmpeg cuda-toolkit
+conda create -y -n py310 --no-channel-priority -c pytorch -c conda-forge python=3.10 pip=24.0 setuptools=81.0.0 faiss-gpu=1.13.2 uv ffmpeg cuda-toolkit
 conda activate py310
 
-export UV_PROJECT_ENVIRONMENT=$CONDA_PREFIX
 uv pip install -r requirements/requirements.txt
 
 sh scripts/setup.sh
